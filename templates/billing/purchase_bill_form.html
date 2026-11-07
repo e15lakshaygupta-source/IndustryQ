@@ -1,0 +1,110 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<section class="ops-panel">
+  <div class="ops-panel-head">
+    <div><h1>Register supplier bill</h1><p>Capture the supplier's invoice, GST input, and optional purchase-order or inventory links.</p></div>
+    <a class="ops-btn" href="{% url 'billing:home' %}?kind=supplier_bill">Purchase bill history</a>
+  </div>
+  <div class="invoice-data-warning" role="note">
+    <strong>Enter details from the original supplier invoice</strong>
+    <span>Check supplier GSTIN and registration status, invoice number/date, HSN/SAC, taxable values, and GST split against the source PDF. Format checks do not verify GST registration or ITC eligibility; have the responsible finance professional review before verification.</span>
+  </div>
+  <form method="post" enctype="multipart/form-data" id="purchase-bill-form">
+    {% csrf_token %}
+    <div class="invoice-fields">
+    {% for error in form.non_field_errors %}<p class="error">{{ error }}</p>{% endfor %}
+    {% for field in form %}
+      <div class="invoice-field {% if field.name == 'notes' or field.name == 'supplier_invoice_pdf' %}full{% endif %}">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<small class="ops-help-text">{{ field.help_text }}</small>{% endif %}
+        {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+      </div>
+    {% endfor %}
+    </div>
+    <section class="billing-lines-panel">
+      <h2>Purchase items and input tax</h2>
+      <p>Enter the supplier's actual line rate and HSN/SAC. Link lines to catalogue or factory inventory records where available.</p>
+      <div id="purchase-bill-lines" class="invoice-lines"></div>
+      <button class="ops-btn secondary" type="button" id="add-purchase-line">Add item</button>
+    </section>
+    <input type="hidden" name="lines" id="purchase-lines-json" value="">
+    <div class="ops-form-actions"><button class="ops-btn" type="submit">Save draft purchase bill</button><a href="{% url 'billing:home' %}?kind=supplier_bill">Cancel and return</a></div>
+  </form>
+</section>
+<style>
+  .invoice-data-warning{display:grid;gap:5px;margin:12px 0 18px;padding:13px 15px;border:1px solid color-mix(in srgb,var(--warning) 35%,var(--line));border-left:4px solid var(--warning);border-radius:9px;background:color-mix(in srgb,var(--warning) 7%,var(--surface))}
+  .invoice-data-warning strong{color:var(--text);font-size:12px}
+  .invoice-data-warning span{color:var(--muted);font-size:11px;line-height:1.55}
+</style>
+<div hidden>
+  {% for product in product_options %}
+    <span data-product-option data-id="{{ product.id }}" data-label="{{ product.label }}" data-rate="{{ product.rate|default_if_none:'' }}" data-hsn="{{ product.hsn_sac_code }}"></span>
+  {% endfor %}
+  {% for item in inventory_options %}
+    <span data-inventory-option data-id="{{ item.id }}" data-label="{{ item.label }}" data-factory="{{ item.factory_id }}" data-unit="{{ item.unit }}"></span>
+  {% endfor %}
+</div>
+<script>
+(() => {
+  const host = document.getElementById("purchase-bill-lines");
+  const output = document.getElementById("purchase-lines-json");
+  const form = document.getElementById("purchase-bill-form");
+
+  function addLine(data = {}) {
+    const row = document.createElement("div");
+    row.className = "purchase-line";
+    row.innerHTML = '<input placeholder="Description" aria-label="Description" required><select aria-label="Catalogue product"><option value="">No product</option></select><select aria-label="Inventory item"><option value="">No inventory link</option></select><input type="number" min="0.001" step="0.001" value="1" aria-label="Quantity" required><input type="number" min="0" step="0.01" value="0" aria-label="Unit price" required><input type="number" min="0" max="100" step="0.001" value="0" aria-label="GST rate"><input placeholder="HSN/SAC" aria-label="HSN/SAC"><button type="button" aria-label="Remove item">Remove</button>';
+    const [description, product, inventory] = row.children;
+    for (const option of document.querySelectorAll("[data-product-option]")) {
+      const element = document.createElement("option");
+      element.value = option.dataset.id;
+      element.textContent = option.dataset.label;
+      element.dataset.rate = option.dataset.rate;
+      element.dataset.hsn = option.dataset.hsn;
+      product.append(element);
+    }
+    for (const option of document.querySelectorAll("[data-inventory-option]")) {
+      const element = document.createElement("option");
+      element.value = option.dataset.id;
+      element.textContent = option.dataset.label;
+      inventory.append(element);
+    }
+    description.value = data.description || "";
+    product.value = data.product || "";
+    inventory.value = data.inventory_item || "";
+    row.children[3].value = data.quantity || "1";
+    row.children[4].value = data.unit_price || "0";
+    row.children[5].value = data.tax_rate || "0";
+    row.children[6].value = data.hsn_sac_code || "";
+    product.addEventListener("change", () => {
+      const selected = product.selectedOptions[0];
+      if (!selected.value) return;
+      if (!description.value) description.value = selected.textContent.split(" - ").slice(1).join(" - ");
+      row.children[5].value = selected.dataset.rate || "0";
+      row.children[6].value = selected.dataset.hsn || "";
+    });
+    inventory.addEventListener("change", () => {
+      const selected = inventory.selectedOptions[0];
+      if (selected.value && !description.value) description.value = selected.textContent.split(" - ").slice(1).join(" - ");
+    });
+    row.lastElementChild.addEventListener("click", () => row.remove());
+    host.append(row);
+  }
+
+  document.getElementById("add-purchase-line").addEventListener("click", () => addLine());
+  addLine();
+  form.addEventListener("submit", () => {
+    output.value = JSON.stringify([...host.children].map((row) => ({
+      description: row.children[0].value,
+      product: row.children[1].value,
+      inventory_item: row.children[2].value,
+      quantity: row.children[3].value,
+      unit_price: row.children[4].value,
+      tax_rate: row.children[5].value,
+      hsn_sac_code: row.children[6].value,
+    })));
+  });
+})();
+</script>
+{% endblock %}

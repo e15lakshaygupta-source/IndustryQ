@@ -1,0 +1,29 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<section class="ops-panel">
+  <div class="ops-panel-head">
+    <div><h1>Credit and debit note history</h1><p>Sales returns, purchase returns, and approved tax adjustments.</p></div>
+    <a class="ops-btn" href="{% url 'billing:home' %}">Back to billing</a>
+  </div>
+  <div class="billing-table-wrap"><table class="billing-table">
+    <thead><tr><th>Note</th><th>Type</th><th>Original document</th><th>Party</th><th>Date</th><th>Reason</th><th>Tax</th><th>Total</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for note in notes %}
+        <tr>
+          <td><a href="{% url 'billing:adjustment_detail' note.pk %}">{{ note.number }}</a></td>
+          <td>{{ note.get_kind_display }}</td>
+          <td><a href="{% url 'billing:document_detail' note.source_document_id %}">{{ note.source_document.number }}</a></td>
+          <td>{% if note.source_document.customer %}{{ note.source_document.customer.name }}{% else %}{{ note.source_document.supplier.name }}{% endif %}</td>
+          <td>{{ note.issue_date }}</td>
+          <td>{{ note.reason }}</td>
+          <td>{{ note.currency_code }} {{ note.tax_amount|floatformat:2 }}</td>
+          <td>{{ note.currency_code }} {{ note.total|floatformat:2 }}</td>
+          <td>{{ note.get_status_display }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="9">No credit or debit notes have been created.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</section>
+{% endblock %}

@@ -1,0 +1,185 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<section class="ops-panel">
+  <div class="ops-panel-head">
+    <div><h1>Create sales invoice</h1><p>Save a draft, review its totals, then approve and issue it.</p></div>
+    <div class="billing-actions">
+      <a class="ops-btn secondary" href="{% url 'billing:customer_create' %}">+ Add customer</a>
+      <a class="ops-btn" href="{% url 'billing:home' %}">Back to billing</a>
+    </div>
+  </div>
+  <p class="ops-help-text">Customer missing? Add the customer first, then return here and select their active account in the Customer field.</p>
+  <div class="invoice-data-warning" role="note">
+    <strong>Tax invoice accuracy matters</strong>
+    <span>Use the actual seller and customer records. Confirm the factory GSTIN/state, customer legal name and place of supply, product HSN/SAC, applicable GST rates, and invoice values before approval. The system checks formats and calculations; it does not confirm GST registration status or provide tax advice.</span>
+  </div>
+  <form method="post" id="invoice-form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="error">{{ form.non_field_errors }}</div>{% endif %}
+    {% for line_form in line_forms %}
+      {% for field in line_form %}
+        {% for error in field.errors %}<p class="error">{{ field.label }}: {{ error }}</p>{% endfor %}
+      {% endfor %}
+    {% endfor %}
+    <div class="invoice-fields">
+      {% for field in form %}
+        <div class="invoice-field {% if field.name == 'notes' %}full{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<small class="ops-help-text">{{ field.help_text }}</small>{% endif %}
+          {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+    <section class="ops-panel">
+      <h2>Invoice lines</h2>
+      <p>Each product uses its assigned effective GST rate. Manual lines can have a separately entered rate.</p>
+      <div id="invoice-lines" class="invoice-lines"></div>
+      <button class="ops-btn" type="button" id="add-invoice-line">Add product</button>
+    </section>
+    <section class="ops-panel" aria-live="polite">
+      <h2>Invoice totals</h2>
+      <div class="billing-totals">
+        <div class="billing-total"><span>Subtotal</span><strong id="preview-subtotal">0.00</strong></div>
+        <div class="billing-total"><span>Taxable value</span><strong id="preview-taxable">0.00</strong></div>
+        <div class="billing-total"><span>CGST</span><strong id="preview-cgst">0.00</strong></div>
+        <div class="billing-total"><span>SGST</span><strong id="preview-sgst">0.00</strong></div>
+        <div class="billing-total"><span>IGST</span><strong id="preview-igst">0.00</strong></div>
+        <div class="billing-total"><span>Final amount</span><strong id="preview-total">0.00</strong></div>
+      </div>
+    </section>
+    <input type="hidden" name="lines" id="invoice-lines-json" value="">
+    <div class="ops-form-actions"><button class="ops-btn" type="submit">Save draft</button><a href="{% url 'billing:home' %}">Cancel and return</a></div>
+  </form>
+</section>
+<div hidden>
+  {% for product in product_options %}
+    <span data-product-option data-id="{{ product.id }}" data-label="{{ product.label }}" data-name="{{ product.name }}" data-price="{{ product.price }}" data-rate="{{ product.rate|default_if_none:'' }}" data-hsn="{{ product.hsn_sac_code }}"></span>
+  {% endfor %}
+  {% for factory in factory_states %}<span data-factory-state data-id="{{ factory.id }}" data-state="{{ factory.state_code }}"></span>{% endfor %}
+  {% for customer in customer_states %}<span data-customer-state data-id="{{ customer.id }}" data-state="{{ customer.state_code }}"></span>{% endfor %}
+</div>
+<style>
+  .invoice-data-warning{display:grid;gap:5px;margin:12px 0 18px;padding:13px 15px;border:1px solid color-mix(in srgb,var(--warning) 35%,var(--line));border-left:4px solid var(--warning);border-radius:9px;background:color-mix(in srgb,var(--warning) 7%,var(--surface))}
+  .invoice-data-warning strong{color:var(--text);font-size:12px}
+  .invoice-data-warning span{color:var(--muted);font-size:11px;line-height:1.55}
+</style>
+<script>
+(() => {
+  const host = document.getElementById("invoice-lines");
+  const output = document.getElementById("invoice-lines-json");
+  const discount = document.getElementById("id_discount_amount");
+  const factory = document.getElementById("id_factory");
+  const customer = document.getElementById("id_customer");
+  const money = value => Math.round((value + Number.EPSILON) * 100) / 100;
+  const factoryStates = new Map([...document.querySelectorAll("[data-factory-state]")].map(item => [item.dataset.id, item.dataset.state]));
+  const customerStates = new Map([...document.querySelectorAll("[data-customer-state]")].map(item => [item.dataset.id, item.dataset.state]));
+
+  function updateTotals() {
+    const grossAmounts = [];
+    for (const row of host.children) {
+      grossAmounts.push(money(
+        Number(row.querySelector("[data-quantity]").value || 0) *
+        Number(row.querySelector("[data-price]").value || 0)
+      ));
+    }
+    const subtotal = money(grossAmounts.reduce((total, amount) => total + amount, 0));
+    const appliedDiscount = Math.min(subtotal, Math.max(0, Number(discount.value || 0)));
+    let remainingDiscount = appliedDiscount;
+    let cgst = 0, sgst = 0, igst = 0;
+    grossAmounts.forEach((gross, index) => {
+      const lineDiscount = index === grossAmounts.length - 1
+        ? remainingDiscount
+        : Math.min(remainingDiscount, money(subtotal ? appliedDiscount * gross / subtotal : 0));
+      remainingDiscount = money(remainingDiscount - lineDiscount);
+      const rate = Number(host.children[index].querySelector("[data-rate]").value || 0);
+      const tax = money(Math.max(0, gross - lineDiscount) * rate / 100);
+      if (factoryStates.get(factory.value) && factoryStates.get(factory.value) === customerStates.get(customer.value)) {
+        cgst += money(tax / 2);
+        sgst += money(tax - money(tax / 2));
+      } else {
+        igst += tax;
+      }
+    });
+    cgst = money(cgst); sgst = money(sgst); igst = money(igst);
+    const taxable = money(subtotal - appliedDiscount);
+    const tax = money(cgst + sgst + igst);
+    document.getElementById("preview-subtotal").textContent = subtotal.toFixed(2);
+    document.getElementById("preview-taxable").textContent = taxable.toFixed(2);
+    document.getElementById("preview-cgst").textContent = cgst.toFixed(2);
+    document.getElementById("preview-sgst").textContent = sgst.toFixed(2);
+    document.getElementById("preview-igst").textContent = igst.toFixed(2);
+    document.getElementById("preview-total").textContent = money(taxable + tax).toFixed(2);
+  }
+
+  function addLine(data = {}) {
+    const row = document.createElement("div");
+    row.className = "invoice-line";
+    row.innerHTML = '<input placeholder="Description" aria-label="Description" required>' +
+      '<select aria-label="Product"><option value="">No product linked</option></select>' +
+      '<input type="number" min="0.001" step="0.001" value="1" data-quantity aria-label="Quantity" required>' +
+      '<input type="number" min="0" step="0.01" value="0" data-price aria-label="Unit price" required>' +
+      '<input placeholder="HSN/SAC" aria-label="HSN/SAC" maxlength="8" data-hsn>' +
+      '<input type="number" min="0" max="100" step="0.001" value="0" data-rate aria-label="GST rate" required>' +
+      '<button type="button" aria-label="Remove line">Remove</button>';
+    const description = row.children[0];
+    const product = row.children[1];
+    const price = row.querySelector("[data-price]");
+    for (const item of document.querySelectorAll("[data-product-option]")) {
+      const option = document.createElement("option");
+      option.value = item.dataset.id;
+      option.textContent = item.dataset.label;
+      option.dataset.name = item.dataset.name;
+      option.dataset.price = item.dataset.price;
+      option.dataset.rate = item.dataset.rate;
+      option.dataset.hsn = item.dataset.hsn;
+      product.append(option);
+    }
+    description.value = data.description || "";
+    product.value = data.product || "";
+    row.querySelector("[data-quantity]").value = data.quantity || 1;
+    price.value = data.unit_price || 0;
+    row.querySelector("[data-hsn]").value = data.hsn_sac_code || "";
+    row.querySelector("[data-rate]").value = data.tax_rate || 0;
+    product.addEventListener("change", () => {
+      const selected = product.selectedOptions[0];
+      if (selected.value) {
+        if (!description.value) description.value = selected.dataset.name;
+        if (Number(price.value) === 0) price.value = selected.dataset.price;
+        row.querySelector("[data-rate]").value = selected.dataset.rate || "0";
+        row.querySelector("[data-rate]").readOnly = true;
+        row.querySelector("[data-hsn]").value = selected.dataset.hsn;
+        row.querySelector("[data-hsn]").readOnly = true;
+      } else {
+        row.querySelector("[data-rate]").readOnly = false;
+        row.querySelector("[data-hsn]").readOnly = false;
+      }
+      updateTotals();
+    });
+    row.lastElementChild.addEventListener("click", () => {
+      row.remove();
+      updateTotals();
+    });
+    row.addEventListener("input", updateTotals);
+    host.append(row);
+  }
+
+  document.getElementById("add-invoice-line").addEventListener("click", () => addLine());
+  discount.addEventListener("input", updateTotals);
+  factory.addEventListener("change", updateTotals);
+  customer.addEventListener("change", updateTotals);
+  document.getElementById("invoice-form").addEventListener("submit", () => {
+    output.value = JSON.stringify([...host.children].map(row => ({
+      description: row.children[0].value,
+      product: row.children[1].value,
+      quantity: row.querySelector("[data-quantity]").value,
+      unit_price: row.querySelector("[data-price]").value,
+      hsn_sac_code: row.querySelector("[data-hsn]").value,
+      tax_rate: row.querySelector("[data-rate]").value
+    })));
+  });
+  addLine();
+  updateTotals();
+})();
+</script>
+{% endblock %}

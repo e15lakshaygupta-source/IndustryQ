@@ -1,0 +1,20 @@
+{% extends "workforce/base.html" %}
+{% block content %}
+<section class="panel">
+  <h1>Assign {{ shift.name }}</h1>
+  <p>Select an employee to add them to this shift.</p>
+  <form method="post" class="workforce-form">
+    {% csrf_token %}
+    <div class="workforce-field full">
+      <label for="employee">Employee</label>
+      <select id="employee" name="employee" required>
+        {% for employee in employees %}<option value="{{ employee.pk }}">{{ employee.employee_id }} &middot; {{ employee.first_name }} {{ employee.last_name }}</option>{% empty %}<option value="" disabled>No employees available</option>{% endfor %}
+      </select>
+    </div>
+    <div class="workforce-form-actions">
+      <button class="button" type="submit">Assign shift</button>
+      <a class="button secondary" href="{% url 'workforce:shift_list' %}">Cancel</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

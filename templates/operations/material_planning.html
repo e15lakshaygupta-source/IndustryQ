@@ -1,0 +1,181 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<header class="material-hero">
+  <div>
+    <p class="material-kicker">MANUFACTURING / MATERIAL REQUIREMENTS</p>
+    <h1>Raw material planning</h1>
+    <p>Define what each finished product consumes, check a production plan against stock and incoming orders, then raise supplier purchase orders for shortages.</p>
+  </div>
+  <div class="material-actions">
+    <a class="ops-btn secondary" href="{% url 'operations:inventory' %}">Inventory</a>
+    <a class="ops-btn secondary" href="{% url 'billing:home' %}">Billing</a>
+  </div>
+</header>
+
+{% for message in messages %}<div class="material-message">{{ message }}</div>{% endfor %}
+
+<section class="ops-panel">
+  <div class="ops-panel-head"><div><h2>1. Product material recipes</h2><p>Enter the raw material quantity consumed to make one unit of a finished product. Recipes are specific to a factory.</p></div></div>
+  <div class="material-note"><strong>Example</strong><span>If one chair consumes 2.5 kg of steel, add a requirement for the chair product, its steel inventory item, and <b>2.5 kg per product unit</b>. Keep raw-material units consistent with the inventory item.</span></div>
+  <form method="post" class="material-recipe-form">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="save_requirement">
+    <input type="hidden" name="production_plan" value="{{ selected_plan.pk|default:'' }}">
+    {% for field in requirement_form %}
+      <div class="material-field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+        {% for error in field.errors %}<small class="error">{{ error }}</small>{% endfor %}
+      </div>
+    {% endfor %}
+    <button class="ops-btn" type="submit">Add / update material</button>
+  </form>
+
+  <div class="table-scroll material-table-wrap">
+    <table class="ops-table">
+      <thead><tr><th>Factory</th><th>Finished product</th><th>Raw material</th><th>Requirement per unit</th><th></th></tr></thead>
+      <tbody>
+      {% for requirement in recipe_requirements %}
+        <tr>
+          <td>{{ requirement.factory.name }}</td>
+          <td><strong>{{ requirement.product.name }}</strong><small>{{ requirement.product.sku }}</small></td>
+          <td><strong>{{ requirement.raw_material.name }}</strong><small>{{ requirement.raw_material.sku }} · {{ requirement.raw_material.unit_of_measure }}</small></td>
+          <td>{{ requirement.quantity_per_unit|floatformat:3 }} {{ requirement.raw_material.unit_of_measure }}</td>
+          <td>
+            <form method="post" class="material-inline-form">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="delete_requirement">
+              <input type="hidden" name="requirement_id" value="{{ requirement.pk }}">
+              <input type="hidden" name="production_plan" value="{{ selected_plan.pk|default:'' }}">
+              <button class="material-remove" type="submit">Remove</button>
+            </form>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="empty-row">No product material recipes yet. Add raw-material inventory items before defining the recipe.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="material-setup-links">
+    <a href="{% url 'operations:inventory_form' 'item' %}">Add raw material inventory item</a>
+    <a href="{% url 'operations:inventory_form' 'supplier' %}">Add supplier</a>
+    <a href="{% url 'operations:inventory_form' 'warehouse' %}">Add warehouse</a>
+  </div>
+</section>
+
+<section class="ops-panel">
+  <div class="ops-panel-head"><div><h2>2. Plan purchases for production</h2><p>Select a production plan to calculate outstanding raw-material needs and shortages.</p></div></div>
+  <form method="get" class="material-plan-picker">
+    <div class="material-field">
+      <label for="{{ plan_form.production_plan.id_for_label }}">Production plan</label>
+      {{ plan_form.production_plan }}
+    </div>
+    <button class="ops-btn" type="submit">Check material needs</button>
+    {% if not plans %}<span class="material-muted">Create a production plan first.</span>{% endif %}
+  </form>
+
+  {% if selected_plan %}
+    <div class="material-plan-summary">
+      <div><span>Plan</span><strong>{{ selected_plan.name }}</strong></div>
+      <div><span>Finished product</span><strong>{{ selected_plan.product.sku }} · {{ selected_plan.product.name }}</strong></div>
+      <div><span>Factory</span><strong>{{ selected_plan.factory.name }}</strong></div>
+      <div><span>Planned output</span><strong>{{ selected_plan.target_quantity }} {{ selected_plan.product.unit_of_measure }}</strong></div>
+      <div><span>Status</span><strong>{{ selected_plan.get_status_display }}</strong></div>
+    </div>
+
+    <div class="table-scroll material-table-wrap">
+      <table class="ops-table">
+        <thead><tr><th>Raw material</th><th>Per finished unit</th><th>Still required</th><th>On hand</th><th>Incoming orders</th><th>Purchase shortage</th><th>Order</th></tr></thead>
+        <tbody>
+        {% for row in material_rows %}
+          <tr>
+            <td><strong>{{ row.requirement.raw_material.name }}</strong><small>{{ row.requirement.raw_material.sku }} · {{ row.requirement.raw_material.unit_of_measure }}</small></td>
+            <td>{{ row.requirement.quantity_per_unit|floatformat:3 }}</td>
+            <td>{{ row.required|floatformat:3 }}</td>
+            <td>{{ row.on_hand|floatformat:3 }}</td>
+            <td>{{ row.incoming|floatformat:3 }}</td>
+            <td>{% if row.shortage > 0 %}<strong class="material-shortage">{{ row.shortage|floatformat:3 }}</strong>{% else %}<span class="material-covered">Covered</span>{% endif %}</td>
+            <td>
+              {% if row.shortage > 0 %}
+                {% if row.order_form.fields.supplier.queryset.exists and row.order_form.fields.warehouse.queryset.exists %}
+                  <form method="post" action="{% url 'operations:raw_material_purchase_order' selected_plan.pk row.requirement.pk %}" class="material-order-form">
+                    {% csrf_token %}
+                    <label>Supplier {{ row.order_form.supplier }}</label>
+                    <label>Warehouse {{ row.order_form.warehouse }}</label>
+                    <label>Order quantity {{ row.order_form.quantity }}</label>
+                    <label>Expected date {{ row.order_form.expected_date }}</label>
+                    <details><summary>Order notes</summary>{{ row.order_form.notes }}</details>
+                    <button class="ops-btn" type="submit">Create purchase order</button>
+                  </form>
+                {% else %}
+                  <span class="material-muted">Add an active supplier and warehouse for this factory.</span>
+                {% endif %}
+              {% else %}
+                <span class="material-muted">No purchase needed</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="empty-row">No material recipe is set up for this product and factory. Add the recipe above to calculate the purchase requirements.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-scroll material-table-wrap">
+      <h3 class="material-subheading">Purchase orders linked to this plan</h3>
+      <table class="ops-table">
+        <thead><tr><th>Order number</th><th>Raw material</th><th>Supplier</th><th>Warehouse</th><th>Ordered</th><th>Expected</th><th>Status</th></tr></thead>
+        <tbody>{% for order in selected_orders %}<tr><td><strong>{{ order.number }}</strong></td><td>{{ order.item.name }} <small>{{ order.item.sku }}</small></td><td>{{ order.supplier.name|default:"—" }}</td><td>{{ order.warehouse.name }}</td><td>{{ order.quantity|floatformat:3 }} {{ order.item.unit_of_measure }}</td><td>{{ order.expected_date|default:"—" }}</td><td>{{ order.get_status_display }}</td></tr>{% empty %}<tr><td colspan="7" class="empty-row">No purchase orders have been created for this plan.</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    <div class="material-flow-note"><strong>After ordering</strong><span>Record delivery using Inventory → Receive goods. The receipt increases stock and updates the purchase-order receipt status. Register the supplier's source invoice under Billing → Register supplier bill and link the purchase order to record GST input and payable balances.</span></div>
+  {% elif plans %}
+    <p class="material-muted">Choose a production plan above to see its raw-material requirements.</p>
+  {% endif %}
+</section>
+
+<style>
+  .material-hero{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin:0 0 16px;padding:20px 22px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(115deg,color-mix(in srgb,var(--accent) 8%,var(--surface)),var(--surface));box-shadow:var(--shadow)}
+  .material-kicker{margin:0 0 7px;color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.14em}
+  .material-hero h1{margin:0;color:var(--text);font-size:clamp(25px,3vw,34px);letter-spacing:-.04em}
+  .material-hero p:last-child{max-width:760px;margin:7px 0 0;color:var(--muted);font-size:12px;line-height:1.55}
+  .material-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .material-note,.material-flow-note{display:grid;gap:4px;margin:0 0 14px;padding:11px 13px;border:1px solid color-mix(in srgb,var(--accent) 24%,var(--line));border-radius:8px;background:color-mix(in srgb,var(--accent) 5%,var(--surface));font-size:11px;line-height:1.5}
+  .material-note strong,.material-flow-note strong{color:var(--text)}
+  .material-note span,.material-flow-note span{color:var(--muted)}
+  .material-recipe-form{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr)) auto;gap:9px;align-items:end;margin-bottom:16px;padding:13px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2)}
+  .material-field label{display:block;margin-bottom:5px;color:var(--muted);font-size:10px;font-weight:700}
+  .material-field select,.material-field input,.material-order-form select,.material-order-form input,.material-order-form textarea{width:100%;min-height:36px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--text);font:inherit;font-size:11px}
+  .material-field small{display:block;margin-top:4px;color:var(--muted);font-size:9px}
+  .material-table-wrap{margin:12px 0;overflow:auto}
+  .material-table-wrap h3{padding:0 12px}
+  .material-table-wrap table{min-width:720px}
+  .material-table-wrap td small{display:block;margin-top:3px;color:var(--muted);font-size:9px}
+  .material-inline-form{margin:0}
+  .material-remove{padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--muted);font:inherit;font-size:10px;cursor:pointer}
+  .material-remove:hover{border-color:var(--warning);color:var(--warning)}
+  .material-setup-links{display:flex;flex-wrap:wrap;gap:12px;padding-top:5px}
+  .material-setup-links a{color:var(--accent);font-size:10px;font-weight:700;text-decoration:none}
+  .material-plan-picker{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:13px}
+  .material-plan-picker .material-field{min-width:min(100%,360px);flex:1}
+  .material-plan-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2)}
+  .material-plan-summary div{min-width:0}
+  .material-plan-summary span{display:block;color:var(--muted);font-size:9px}
+  .material-plan-summary strong{display:block;margin-top:4px;overflow-wrap:anywhere;color:var(--text);font-size:10px}
+  .material-order-form{display:grid;min-width:180px;gap:5px}
+  .material-order-form label{display:grid;gap:3px;color:var(--muted);font-size:9px}
+  .material-order-form details{font-size:9px}
+  .material-order-form summary{cursor:pointer;color:var(--accent)}
+  .material-order-form .ops-btn{padding:7px;font-size:9px}
+  .material-shortage{color:var(--warning)}
+  .material-covered{color:var(--success);font-size:10px;font-weight:700}
+  .material-muted{color:var(--muted);font-size:10px;line-height:1.5}
+  .material-message{margin:0 0 10px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font-size:11px}
+  .material-subheading{margin:16px 0 8px;color:var(--text);font-size:13px}
+  @media(max-width:1050px){.material-recipe-form{grid-template-columns:repeat(2,minmax(0,1fr))}.material-plan-summary{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media(max-width:650px){.material-hero{align-items:flex-start;flex-direction:column;padding:16px}.material-recipe-form{grid-template-columns:1fr}.material-plan-picker{align-items:stretch;flex-direction:column}.material-plan-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.material-table-wrap table{min-width:760px}}
+</style>
+{% endblock %}

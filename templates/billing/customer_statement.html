@@ -1,0 +1,41 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<section class="ops-panel">
+  <div class="ops-panel-head">
+    <div>
+      <h1>Customer statement</h1>
+      <p>{{ customer.name }} · {{ customer.customer_id }} · {{ customer.company.name }}</p>
+    </div>
+    <div>
+      <a class="ops-btn" href="{% url 'billing:customer_statement_csv' customer.pk %}">Export CSV</a>
+      <a class="ops-btn" href="{% url 'billing:customer_detail' customer.pk %}">Customer account</a>
+    </div>
+  </div>
+  <div class="metric-grid">
+    {% for currency, balance in outstanding_by_currency.items %}
+    <article class="metric-card"><span>Outstanding · {{ currency }}</span><strong>{{ balance|floatformat:2 }}</strong></article>
+    {% empty %}
+    <article class="metric-card"><span>Outstanding balance</span><strong>0.00</strong></article>
+    {% endfor %}
+    <article class="metric-card"><span>Invoices in statement</span><strong>{{ invoices|length }}</strong></article>
+  </div>
+  <div class="billing-table-wrap"><table class="billing-table">
+    <thead><tr><th>Date</th><th>Reference</th><th>Transaction</th><th>Currency</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.date }}</td>
+        <td>{{ row.reference }}</td>
+        <td>{{ row.transaction }}</td>
+        <td>{{ row.currency }}</td>
+        <td>{{ row.debit|floatformat:2 }}</td>
+        <td>{{ row.credit|floatformat:2 }}</td>
+        <td>{{ row.balance|floatformat:2 }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7">No issued invoices or payments are available for this customer.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</section>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title|default:"Workforce" }} | INDUSTRIQ</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261106">
+  <style>
+    .workforce-shell{width:100%;min-height:100vh;box-sizing:border-box}
+    .workforce-shell>.workforce-inner{width:100%;max-width:1520px;margin:0 auto}
+    .workforce-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;padding:8px 0 20px}
+    .workforce-eyebrow{margin:0;color:var(--accent)!important;font-size:10px;font-weight:800;letter-spacing:.15em}
+    .workforce-heading h1{margin:7px 0;font-size:clamp(28px,3vw,38px);font-weight:760;letter-spacing:-.045em;line-height:1.15}
+    .workforce-heading p:not(.workforce-eyebrow){margin:0;color:var(--muted);font-size:13px;line-height:1.55}
+    .workforce-nav{display:flex;gap:7px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding:0 0 15px;margin-bottom:22px}
+    .workforce-nav a{display:inline-flex;align-items:center;min-height:38px;padding:8px 13px;border:1px solid transparent;border-radius:9px;color:var(--muted);font-size:12px;font-weight:650;text-decoration:none;transition:background .16s,border-color .16s,color .16s}
+    .workforce-nav a:hover,.workforce-nav a.active{background:var(--surface);border-color:var(--line);color:var(--accent)}
+    .workforce-nav a.active{box-shadow:inset 0 -2px var(--accent),0 1px 3px #142b4508}
+    .workforce-shell>.workforce-inner>.msg{margin:0 0 16px}
+    .workforce-shell .panel,.workforce-shell .metric{min-width:0;padding:clamp(16px,2vw,24px);margin:0 0 16px;border:1px solid var(--line);border-radius:15px;background:var(--surface);box-shadow:var(--shadow)}
+    .workforce-shell .panel>h1{margin:0 0 18px;font-size:clamp(20px,2.1vw,25px);font-weight:740;letter-spacing:-.03em}
+    .workforce-shell .panel>h2{margin:0 0 14px;font-size:17px;font-weight:720;letter-spacing:-.02em}
+    .workforce-shell .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:0 0 16px}
+    .workforce-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:0 0 16px}
+    .workforce-shell .metric{display:flex;flex-direction:column;gap:8px;margin:0;padding:18px}
+    .workforce-shell .metric strong{order:-1;margin:0;color:var(--accent);font-size:clamp(24px,3vw,32px);font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+    .workforce-shell .panel>form[method=get]{display:flex;align-items:end;gap:10px;flex-wrap:wrap;padding:14px;margin:0 0 17px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+    .workforce-shell .panel>form[method=get] label{display:grid;gap:6px;margin:0;color:var(--muted);font-size:11px;font-weight:700}
+    .workforce-shell .panel>form[method=get] input,.workforce-shell .panel>form[method=get] select{width:auto;min-width:170px;min-height:40px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--text)}
+    .workforce-table-wrap{width:100%;max-width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:11px;background:var(--surface);overscroll-behavior-x:contain}
+    .workforce-shell table{width:100%;min-width:680px;border-collapse:separate;border-spacing:0;background:var(--surface)}
+    .workforce-shell table th,.workforce-shell table td{padding:12px 14px;text-align:left;vertical-align:middle;border-bottom:1px solid var(--line);white-space:nowrap}
+    .workforce-shell table th{position:sticky;top:0;background:var(--surface-2);color:var(--muted);font-size:10px;font-weight:750;letter-spacing:.07em;text-transform:uppercase}
+    .workforce-shell table td{color:var(--text);font-size:12px}
+    .workforce-shell table tr:last-child td{border-bottom:0}
+    .workforce-shell table tbody tr:hover{background:color-mix(in srgb,var(--accent) 4%,var(--surface))}
+    .workforce-shell table td form{display:flex;align-items:center;gap:7px}
+    .workforce-shell .button,.workforce-shell button{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:9px 13px;border:1px solid var(--accent);border-radius:9px;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:700;text-decoration:none;cursor:pointer}
+    .workforce-shell .button:hover,.workforce-shell button:hover{filter:brightness(.94)}
+    .workforce-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px 18px;max-width:920px}
+    .workforce-field{min-width:0}
+    .workforce-field.full{grid-column:1/-1}
+    .workforce-field label{display:block;margin:0 0 6px;color:var(--muted);font-size:11px;font-weight:700}
+    .workforce-form input:not([type=checkbox]):not([type=radio]),.workforce-form select,.workforce-form textarea{width:100%;min-height:42px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);color:var(--text)}
+    .workforce-form .helptext{display:block;margin-top:5px;color:var(--muted);font-size:11px}
+    .workforce-form .errorlist{grid-column:1/-1;margin:0;padding:10px 13px;border:1px solid var(--danger);border-radius:9px;background:var(--danger-bg);color:var(--danger);font-size:12px}
+    .workforce-form-actions{grid-column:1/-1;display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:5px;padding-top:15px;border-top:1px solid var(--line)}
+    .workforce-form-actions .button.secondary{border-color:var(--line);background:var(--surface-2);color:var(--text)}
+    .workforce-shell .button.secondary,.workforce-shell button.secondary{border-color:var(--line);background:var(--surface-2);color:var(--text)}
+    .workforce-shell button:disabled{opacity:.52;cursor:not-allowed;filter:none}
+    .workforce-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:0 0 16px}
+    .workforce-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px}
+    .workforce-panel-heading h2{margin:0!important}
+    .workforce-panel-heading>a{font-size:12px;font-weight:650;text-decoration:none}
+    .workforce-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;color:var(--muted);font-size:12px}
+    .workforce-pagination>span:last-child{display:flex;gap:8px}
+    .workforce-pagination a{padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);text-decoration:none}
+    .workforce-status{display:inline-flex;align-items:center;padding:4px 8px;border:1px solid var(--line);border-radius:999px;background:var(--surface-2);color:var(--muted);font-size:10px;font-weight:700;white-space:nowrap}
+    .workforce-status.active,.workforce-status.approved{border-color:color-mix(in srgb,var(--success) 32%,var(--line));background:var(--success-bg);color:var(--success)}
+    .workforce-status.pending,.workforce-status.on_leave{border-color:color-mix(in srgb,var(--warning) 32%,var(--line));background:var(--warning-bg);color:var(--warning)}
+    .workforce-status.inactive,.workforce-status.rejected,.workforce-status.resigned{border-color:color-mix(in srgb,var(--danger) 30%,var(--line));background:var(--danger-bg);color:var(--danger)}
+    .workforce-profile-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:20px}
+    .workforce-profile-heading h1{margin:7px 0 9px!important}
+    .workforce-profile-meta{margin:0;color:var(--muted);font-size:13px;line-height:1.6}
+    .workforce-profile{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:0}
+    .workforce-profile>div,.workforce-inline-details>div{min-width:0;padding:13px 15px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}
+    .workforce-profile dt,.workforce-inline-details dt{margin:0 0 6px;color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+    .workforce-profile dd,.workforce-inline-details dd{margin:0;overflow-wrap:anywhere;font-size:13px;font-weight:600}
+    .workforce-reason{min-width:180px;max-width:320px;white-space:normal!important;line-height:1.5}
+    .workforce-subheading{margin:25px 0 15px;padding-top:20px;border-top:1px solid var(--line);font-size:16px}
+    .workforce-record-list{display:grid;gap:9px}
+    .workforce-record-list>article,.workforce-shift-card{padding:14px 15px;border:1px solid var(--line);border-radius:11px;background:var(--surface-2)}
+    .workforce-record-list>article>div{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+    .workforce-record-list strong,.workforce-shift-card strong{font-size:12px}
+    .workforce-record-list span,.workforce-shift-card span{color:var(--muted);font-size:11px}
+    .workforce-record-list article p{margin:9px 0 0;color:var(--muted);font-size:12px;line-height:1.6;white-space:pre-line}
+    .workforce-record-list>p,.workforce-shift-card+p{margin:0;color:var(--muted);font-size:12px}
+    .workforce-portal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+    .workforce-portal-grid>.panel{margin:0}
+    .workforce-portal-grid>.panel:nth-child(n+3){grid-column:span 1}
+    .workforce-attendance-state{display:inline-flex;padding:6px 10px;border-radius:999px;background:color-mix(in srgb,var(--accent) 9%,var(--surface));color:var(--accent);font-size:12px;font-weight:750}
+    .workforce-inline-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:3px 0 16px}
+    .workforce-punch-form{display:flex;gap:9px;flex-wrap:wrap}
+    .workforce-decision-form{display:flex;gap:7px;flex-wrap:wrap}
+    .workforce-decision-form button{min-height:32px;padding:7px 10px;font-size:10px}
+    .workforce-shell .panel>p:last-child{color:var(--muted);font-size:12px}
+    .workforce-shell .panel>p:last-child a{display:inline-flex;margin:5px 5px 0 0;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);font-weight:650;text-decoration:none}
+    .workforce-shell .error{color:var(--danger)!important}
+    @media(max-width:850px){.workforce-heading{align-items:flex-start;flex-direction:column}.workforce-nav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}.workforce-nav a{flex-shrink:0}.workforce-profile{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:600px){.workforce-shell .grid,.workforce-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.workforce-shell .panel{padding:15px}.workforce-shell .panel>form[method=get]{align-items:stretch;flex-direction:column}.workforce-shell .panel>form[method=get] label,.workforce-shell .panel>form[method=get] input,.workforce-shell .panel>form[method=get] select{width:100%}.workforce-shell table th,.workforce-shell table td{padding:10px 11px}.workforce-shell table{min-width:620px}.workforce-shell .panel>h1{font-size:21px}.workforce-form{grid-template-columns:1fr}.workforce-field.full,.workforce-form-actions{grid-column:auto}.workforce-profile-heading{flex-direction:column}.workforce-profile{grid-template-columns:1fr 1fr}.workforce-portal-grid{grid-template-columns:1fr}.workforce-pagination{align-items:flex-start;flex-direction:column}.workforce-panel-heading{align-items:flex-start;flex-direction:column}}
+    @media(max-width:380px){.workforce-shell .grid,.workforce-summary{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+{% include "partials/app_sidebar.html" %}
+<main class="app-content workforce-shell">
+  <div class="workforce-inner">
+    <header class="workforce-heading">
+      <div>
+        <p class="workforce-eyebrow">INDUSTRIQ / PEOPLE &amp; OPERATIONS</p>
+        <h1>Workforce</h1>
+        <p>Manage people, attendance, shifts, and leave in your assigned workspace.</p>
+      </div>
+    </header>
+    <nav class="workforce-nav" aria-label="Workforce tools">
+      <a class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'workforce:home' %}">Overview</a>
+      <a class="{% if request.resolver_match.url_name == 'employee_list' or request.resolver_match.url_name == 'employee_detail' or request.resolver_match.url_name == 'employee_create' or request.resolver_match.url_name == 'employee_edit' or request.resolver_match.url_name == 'performance_create' %}active{% endif %}" href="{% url 'workforce:employee_list' %}">Employees</a>
+      <a class="{% if request.resolver_match.url_name == 'recruitment' or request.resolver_match.url_name == 'applicant_status' %}active{% endif %}" href="{% url 'workforce:recruitment' %}">Recruitment</a>
+      <a class="{% if request.resolver_match.url_name == 'payroll' %}active{% endif %}" href="{% url 'workforce:payroll' %}">Payroll</a>
+      <a class="{% if request.resolver_match.url_name == 'training' or request.resolver_match.url_name == 'training_complete' %}active{% endif %}" href="{% url 'workforce:training' %}">Training</a>
+      <a class="{% if request.resolver_match.url_name == 'shift_list' or request.resolver_match.url_name == 'shift_assign' or request.resolver_match.url_name == 'shift_create' %}active{% endif %}" href="{% url 'workforce:shift_list' %}">Shifts</a>
+      <a class="{% if request.resolver_match.url_name == 'attendance_list' or request.resolver_match.url_name == 'attendance_create' or request.resolver_match.url_name == 'attendance_punch' %}active{% endif %}" href="{% url 'workforce:attendance_list' %}">Attendance</a>
+      <a class="{% if request.resolver_match.url_name == 'attendance_report' %}active{% endif %}" href="{% url 'workforce:attendance_report' %}">Attendance report</a>
+      <a class="{% if request.resolver_match.url_name == 'leave_list' or request.resolver_match.url_name == 'leave_review' %}active{% endif %}" href="{% url 'workforce:leave_list' %}">Leave</a>
+      <a class="{% if request.resolver_match.url_name == 'portal' %}active{% endif %}" href="{% url 'workforce:portal' %}">My portal</a>
+    </nav>
+    {% for message in messages %}<p class="msg" role="status">{{ message }}</p>{% endfor %}
+    {% block content %}{% endblock %}
+  </div>
+</main>
+</body>
+</html>

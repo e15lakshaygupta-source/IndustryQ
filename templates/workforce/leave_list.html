@@ -1,0 +1,32 @@
+{% extends "workforce/base.html" %}
+{% block content %}
+<section class="panel">
+  <h1>Leave applications</h1>
+  <div class="workforce-table-wrap">
+    <table>
+      <thead><tr><th>Employee</th><th>Type</th><th>Dates</th><th>Reason</th><th>Status</th><th>Decision</th></tr></thead>
+      <tbody>
+      {% for leave in leaves %}
+        <tr>
+          <td>{{ leave.employee.employee_id }} &middot; {{ leave.employee.first_name }} {{ leave.employee.last_name }}</td>
+          <td>{{ leave.get_leave_type_display }}</td>
+          <td>{{ leave.start_date }} to {{ leave.end_date }}</td>
+          <td class="workforce-reason">{{ leave.reason }}</td>
+          <td><span class="workforce-status {{ leave.status }}">{{ leave.get_status_display }}</span></td>
+          <td>
+            {% if can_manage and leave.status == 'pending' %}
+            <form method="post" action="{% url 'workforce:leave_review' leave.pk %}" class="workforce-decision-form">{% csrf_token %}
+              <button name="status" value="approved">Approve</button>
+              <button class="secondary" name="status" value="rejected">Reject</button>
+            </form>
+            {% else %}{{ leave.reviewed_by|default:"&mdash;" }}{% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6">No leave applications.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,217 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} | INDUSTRIQ</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261106">
+  <style>
+    .um-page{width:100%;max-width:1480px;margin:0 auto;padding:24px 0 42px}
+    .um-hero{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:20px}
+    .um-kicker{margin:0 0 8px;color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+    .um-hero h1{margin:0;color:var(--text);font-size:clamp(25px,3vw,36px);letter-spacing:-.04em}
+    .um-hero p:last-child{max-width:620px;margin:8px 0 0;color:var(--muted);font-size:13px;line-height:1.6}
+    .um-actions{display:flex;gap:9px;flex-wrap:wrap}
+    .um-button{display:inline-flex;justify-content:center;align-items:center;min-height:38px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font-size:11px;font-weight:700;text-decoration:none}
+    .um-button.primary{border-color:transparent;background:var(--accent);color:var(--accent-ink);box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 22%,transparent)}
+    .um-button:hover{border-color:var(--accent)}
+    .um-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin-bottom:16px}
+    .um-stat{padding:15px 17px;border:1px solid var(--line);border-radius:11px;background:var(--surface);box-shadow:var(--shadow)}
+    .um-stat span{display:block;color:var(--muted);font-size:10px;font-weight:650;letter-spacing:.04em;text-transform:uppercase}
+    .um-stat strong{display:block;margin-top:7px;color:var(--text);font-size:23px;letter-spacing:-.03em}
+    .um-stat small{display:block;margin-top:3px;color:var(--muted);font-size:10px}
+    .um-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) minmax(150px,200px) minmax(140px,170px) auto;gap:9px;align-items:end;margin-bottom:14px;padding:14px;border:1px solid var(--line);border-radius:11px;background:var(--surface)}
+    .um-control label{display:block;margin:0 0 5px;color:var(--muted);font-size:10px;font-weight:700}
+    .um-control input,.um-control select,.um-field select{width:100%;min-height:38px;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--text);font:inherit;font-size:12px}
+    .um-control input:focus,.um-control select:focus,.um-field select:focus{outline:2px solid color-mix(in srgb,var(--accent) 28%,transparent);border-color:var(--accent)}
+    .um-filter-actions{display:flex;gap:7px}
+    .um-filter-actions .um-button{min-height:38px}
+    .um-list-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:20px 2px 10px}
+    .um-list-head h2{margin:0;color:var(--text);font-size:15px}
+    .um-list-head span{color:var(--muted);font-size:11px}
+    .um-card{margin-bottom:10px;padding:16px;border:1px solid var(--line);border-radius:11px;background:var(--surface);box-shadow:var(--shadow)}
+    .um-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:13px}
+    .um-identity{display:flex;align-items:center;gap:11px;min-width:0}
+    .um-avatar{display:grid;place-items:center;width:40px;height:40px;flex:0 0 auto;border-radius:11px;background:color-mix(in srgb,var(--accent) 11%,var(--surface));color:var(--accent);font-size:13px;font-weight:800}
+    .um-name{min-width:0}
+    .um-name strong{display:block;overflow:hidden;color:var(--text);font-size:13px;text-overflow:ellipsis;white-space:nowrap}
+    .um-name small{display:block;margin-top:4px;overflow:hidden;color:var(--muted);font-size:10px;text-overflow:ellipsis;white-space:nowrap}
+    .um-badges{display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+    .um-badge{display:inline-flex;align-items:center;min-height:23px;padding:0 8px;border:1px solid var(--line);border-radius:20px;color:var(--muted);font-size:9px;font-weight:700;white-space:nowrap}
+    .um-badge.active{border-color:color-mix(in srgb,var(--success) 35%,var(--line));background:color-mix(in srgb,var(--success) 8%,var(--surface));color:var(--success)}
+    .um-badge.inactive{border-color:color-mix(in srgb,var(--warning) 35%,var(--line));background:color-mix(in srgb,var(--warning) 8%,var(--surface));color:var(--warning)}
+    .um-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:13px}
+    .um-meta-item{min-width:0;padding:9px 10px;border-radius:7px;background:var(--surface-2)}
+    .um-meta-item span{display:block;color:var(--muted);font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+    .um-meta-item strong{display:block;margin-top:4px;overflow:hidden;color:var(--text);font-size:10px;font-weight:650;text-overflow:ellipsis;white-space:nowrap}
+    .um-assignment{padding-top:12px;border-top:1px solid var(--line)}
+    .um-assignment-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px}
+    .um-assignment-title strong{color:var(--text);font-size:10px}
+    .um-assignment-title small{color:var(--muted);font-size:9px}
+    .um-fields{display:grid;grid-template-columns:repeat(4,minmax(125px,1fr));gap:9px}
+    .um-field label{display:block;margin-bottom:5px;color:var(--muted);font-size:9px;font-weight:700}
+    .um-field select{min-height:36px;font-size:11px}
+    .um-field select:disabled{opacity:.55}
+    .um-submit-row{display:flex;justify-content:flex-end;margin-top:10px}
+    .um-save{min-height:34px;padding:0 13px;border:0;border-radius:7px;background:var(--accent);color:var(--accent-ink);font:inherit;font-size:10px;font-weight:750;cursor:pointer}
+    .um-save:hover{filter:brightness(1.06)}
+    .um-protected{padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);color:var(--muted);font-size:10px;line-height:1.5}
+    .um-flashes{margin-bottom:12px}
+    .um-flash{margin:0 0 7px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font-size:11px}
+    .um-empty{padding:34px 20px;border:1px dashed var(--line);border-radius:11px;background:var(--surface);color:var(--muted);text-align:center}
+    .um-empty strong{display:block;margin-bottom:5px;color:var(--text);font-size:13px}
+    .um-pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--muted);font-size:10px}
+    .um-pagination a{color:var(--accent);font-weight:700;text-decoration:none}
+    @media(max-width:900px){.um-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}.um-meta{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:640px){.um-page{padding:16px 0 28px}.um-hero{align-items:flex-start;flex-direction:column}.um-stats{gap:7px}.um-stat{padding:12px}.um-stat strong{font-size:20px}.um-toolbar{grid-template-columns:1fr}.um-card{padding:13px}.um-card-top{align-items:flex-start;flex-direction:column}.um-badges{justify-content:flex-start}.um-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.um-list-head{align-items:flex-start;flex-direction:column}}
+    @media(max-width:380px){.um-stats{grid-template-columns:1fr}.um-fields,.um-meta{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  {% include "partials/app_sidebar.html" %}
+  <main class="app-content">
+    <div class="um-page">
+      <header class="um-hero">
+        <div>
+          <p class="um-kicker">People &amp; permissions</p>
+          <h1>Manage users &amp; roles</h1>
+          <p>Find any registered account, review its current organization assignment, and update its access role. Changes are recorded in audit history.</p>
+        </div>
+        <div class="um-actions">
+          <a class="um-button primary" href="{% url 'user_create' %}">+ Create user</a>
+          <a class="um-button" href="{% url 'dashboard' %}">Dashboard</a>
+        </div>
+      </header>
+
+      <section class="um-stats" aria-label="User account summary">
+        <div class="um-stat"><span>All accounts</span><strong>{{ user_count }}</strong><small>Registered system users</small></div>
+        <div class="um-stat"><span>Active accounts</span><strong>{{ active_user_count }}</strong><small>Can sign in to INDUSTRIQ</small></div>
+        <div class="um-stat"><span>Employees to assign</span><strong>{{ unassigned_user_count }}</strong><small>Employee role without an organization scope</small></div>
+      </section>
+
+      <div class="um-flashes">{% for message in messages %}<p class="um-flash">{{ message }}</p>{% endfor %}</div>
+
+      <form class="um-toolbar" method="get">
+        <div class="um-control"><label for="user-search">Search accounts</label><input id="user-search" name="q" type="search" value="{{ search }}" placeholder="Name, username, or email"></div>
+        <div class="um-control"><label for="role-filter">Access role</label><select id="role-filter" name="role"><option value="">All roles</option>{% for value,label in role_choices %}<option value="{{ value }}" {% if role_filter == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <div class="um-control"><label for="status-filter">Account status</label><select id="status-filter" name="status"><option value="">All statuses</option><option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option><option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option></select></div>
+        <div class="um-filter-actions"><button class="um-button primary" type="submit">Search</button><a class="um-button" href="{% url 'user_management' %}">Clear</a></div>
+      </form>
+
+      <div class="um-list-head"><h2>System accounts</h2><span>{{ page_obj.paginator.count }} result{{ page_obj.paginator.count|pluralize }} · page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></div>
+
+      {% for row in user_rows %}
+        <article class="um-card">
+          <header class="um-card-top">
+            <div class="um-identity">
+              <span class="um-avatar" aria-hidden="true">{{ row.profile.user.first_name|default:row.profile.user.username|slice:":1"|upper }}{{ row.profile.user.last_name|slice:":1"|upper }}</span>
+              <div class="um-name">
+                <strong>{{ row.profile.user.get_full_name|default:row.profile.user.username }}</strong>
+                <small>@{{ row.profile.user.username }}{% if row.profile.user.email %} · {{ row.profile.user.email }}{% endif %}</small>
+              </div>
+            </div>
+            <div class="um-badges">
+              <span class="um-badge {% if row.profile.user.is_active %}active{% else %}inactive{% endif %}">{% if row.profile.user.is_active %}Active account{% else %}Inactive account{% endif %}</span>
+              <span class="um-badge">{{ row.profile.get_role_display }}</span>
+              {% if row.profile.user.is_staff %}<span class="um-badge">Staff access</span>{% endif %}
+              {% if row.profile.user.is_superuser %}<span class="um-badge">System superuser</span>{% endif %}
+            </div>
+          </header>
+
+          <div class="um-meta">
+            <div class="um-meta-item"><span>Employee record</span><strong>{% if row.employee %}{{ row.employee.employee_id }} · {{ row.employee.designation }}{% else %}Not linked{% endif %}</strong></div>
+            <div class="um-meta-item"><span>Company</span><strong>{{ row.profile.company.name|default:"Not assigned" }}</strong></div>
+            <div class="um-meta-item"><span>Factory</span><strong>{{ row.profile.factory.name|default:"Not assigned" }}</strong></div>
+            <div class="um-meta-item"><span>Department</span><strong>{{ row.profile.department.name|default:"Not assigned" }}</strong></div>
+          </div>
+
+          {% if row.protected %}
+            <div class="um-protected">{% if row.profile.user_id == request.user.pk %}This is your signed-in account. Assign a different account to avoid locking yourself out.{% else %}System superuser accounts are protected here; manage their Django superuser access through the secure system administration process.{% endif %}</div>
+          {% else %}
+            <form class="um-assignment-form" method="post" action="{% url 'user_assignment' row.profile.pk %}">
+              {% csrf_token %}
+              <div class="um-assignment">
+                <div class="um-assignment-title"><strong>Update access &amp; organization</strong><small>Choose the role, then scope the account to a company, factory, or department.</small></div>
+                <div class="um-fields">
+                  {% for field in row.form %}
+                    <div class="um-field" data-assignment-field="{{ field.name }}">
+                      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                      {{ field }}
+                      {% for error in field.errors %}<small class="error">{{ error }}</small>{% endfor %}
+                    </div>
+                  {% endfor %}
+                </div>
+                <div class="um-submit-row"><button class="um-save" type="submit">Save access changes</button></div>
+              </div>
+            </form>
+          {% endif %}
+        </article>
+      {% empty %}
+        <div class="um-empty"><strong>No accounts match these filters</strong>Try a different search or clear the selected filters.</div>
+      {% endfor %}
+
+      {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="um-pagination" aria-label="User list pages">
+          <span>Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}</span>
+          <div>{% if page_obj.has_previous %}<a href="?q={{ search|urlencode }}&amp;role={{ role_filter|urlencode }}&amp;status={{ status_filter|urlencode }}&amp;page={{ page_obj.previous_page_number }}">← Previous</a>{% endif %}{% if page_obj.has_previous and page_obj.has_next %} &nbsp;·&nbsp; {% endif %}{% if page_obj.has_next %}<a href="?q={{ search|urlencode }}&amp;role={{ role_filter|urlencode }}&amp;status={{ status_filter|urlencode }}&amp;page={{ page_obj.next_page_number }}">Next →</a>{% endif %}</div>
+        </nav>
+      {% endif %}
+    </div>
+  </main>
+
+  <div hidden aria-hidden="true">
+    {% for company in companies %}<span data-org-company="{{ company.pk }}" data-label="{{ company.name }}"></span>{% endfor %}
+    {% for factory in factories %}<span data-org-factory="{{ factory.pk }}" data-company="{{ factory.company_id }}" data-label="{{ factory.name }}"></span>{% endfor %}
+    {% for department in departments %}<span data-org-department="{{ department.pk }}" data-factory="{{ department.factory_id }}" data-label="{{ department.name }}"></span>{% endfor %}
+  </div>
+  <script>
+    (() => {
+      const org = {
+        companies: [...document.querySelectorAll("[data-org-company]")],
+        factories: [...document.querySelectorAll("[data-org-factory]")],
+        departments: [...document.querySelectorAll("[data-org-department]")]
+      };
+      document.querySelectorAll(".um-assignment-form").forEach((form) => {
+        const role = form.querySelector('[name="role"]');
+        const company = form.querySelector('[name="company"]');
+        const factory = form.querySelector('[name="factory"]');
+        const department = form.querySelector('[name="department"]');
+        const populate = (select, items, parentId, parentKey, selected, requireParent = false) => {
+          if (!select) return;
+          const placeholder = select.options[0]?.cloneNode(true);
+          select.replaceChildren();
+          if (placeholder) select.append(placeholder);
+          items.filter((item) => (!requireParent || parentId) && (!parentId || item.dataset[parentKey] === parentId)).forEach((item) => {
+            const option = document.createElement("option");
+            option.value = item.dataset.orgCompany || item.dataset.orgFactory || item.dataset.orgDepartment;
+            option.textContent = item.dataset.label;
+            option.selected = option.value === selected;
+            select.append(option);
+          });
+        };
+        const filterFactories = (keepSelection = true) => {
+          const selected = keepSelection ? factory.value : "";
+          populate(factory, org.factories, company.value, "company", selected);
+          filterDepartments(keepSelection);
+        };
+        const filterDepartments = (keepSelection = true) => {
+          const selected = keepSelection ? department.value : "";
+          populate(department, org.departments, factory.value, "factory", selected, true);
+        };
+        const updateRoleFields = () => {
+          const selectedRole = role.value;
+          if (company) company.required = selectedRole === "company_admin";
+          if (factory) factory.required = selectedRole === "factory_manager" || selectedRole === "department_manager";
+          if (department) department.required = selectedRole === "department_manager";
+        };
+        if (company) company.addEventListener("change", () => filterFactories(false));
+        if (factory) factory.addEventListener("change", () => filterDepartments(false));
+        if (role) role.addEventListener("change", updateRoleFields);
+        filterFactories(true);
+        updateRoleFields();
+      });
+    })();
+  </script>
+</body>
+</html>

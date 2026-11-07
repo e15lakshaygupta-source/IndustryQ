@@ -1,0 +1,25 @@
+{% extends "reports/base.html" %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+<section class="report-panel" aria-labelledby="notifications-title">
+  <header class="report-panel-head">
+    <div><h2 id="notifications-title">Notifications</h2><p>Recent notices and items that need your attention.</p></div>
+  </header>
+  <div class="notification-toolbar">
+    <p>Showing up to 50 recent notices and pending reviews.</p>
+    <form method="post">{% csrf_token %}<button class="notification-mark-read" type="submit">Mark all read</button></form>
+  </div>
+  {% for item in notifications %}
+  <article class="notification-card {% if not item.is_read %}unread{% endif %}">
+    <div class="notification-copy">
+      <strong>{{ item.title }}</strong>{% if not item.is_read %}<span class="notification-new">New</span>{% endif %}
+      <p>{{ item.message }}</p>
+      <small><time datetime="{{ item.created_at|date:'c' }}">{{ item.created_at|date:"M d, Y - H:i" }}</time></small>
+    </div>
+    {% if item.target_url %}<a class="notification-open" href="{{ item.target_url }}">Open <span aria-hidden="true">&rarr;</span></a>{% endif %}
+  </article>
+  {% empty %}
+  <div class="reports-empty-state"><strong>You are all caught up</strong><p>No new notifications or pending alerts.</p></div>
+  {% endfor %}
+</section>
+{% endblock %}

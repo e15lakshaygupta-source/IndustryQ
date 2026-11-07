@@ -1,0 +1,27 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<section class="ops-panel crm-form-panel">
+  <div class="ops-panel-head">
+    <div><p class="crm-eyebrow">CUSTOMER RELATIONSHIP MANAGEMENT</p><h1>{{ title }}</h1><p>Keep customer and sales information accurate so your team can follow up with confidence.</p></div>
+  </div>
+  <form method="post" class="ops-form crm-record-form">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="ops-form-field {% if field.name == 'details' or field.name == 'notes' %}full{% endif %}">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<small class="ops-help-text">{{ field.help_text }}</small>{% endif %}
+        {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+      </div>
+    {% endfor %}
+    {% for error in form.non_field_errors %}<div class="ops-form-field full"><p class="error">{{ error }}</p></div>{% endfor %}
+    <div class="ops-form-actions">
+      <button class="ops-btn" type="submit">{{ submit_label }}</button>
+      <a href="{{ cancel_url }}">Cancel</a>
+    </div>
+  </form>
+</section>
+<style>
+  .crm-form-panel{max-width:980px;margin-inline:auto}.crm-eyebrow{margin:0 0 7px;color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.13em}.crm-form-panel .ops-panel-head h1{margin:0;font-size:clamp(23px,3vw,32px);color:var(--text)}.crm-form-panel .ops-panel-head p:not(.crm-eyebrow){margin:7px 0 0;color:var(--muted);font-size:12px}.crm-record-form{margin-top:20px}
+</style>
+{% endblock %}

@@ -1,0 +1,11 @@
+﻿{% extends "enterprise/base.html" %}{% block heading %}API &amp; integration marketplace{% endblock %}{% block content %}
+{% if can_manage %}<section class="ent-panel"><h2>Register API client</h2><p>Create a factory-scoped, read-only API key for a trusted accounting, ERP, bank, logistics, or custom client. The API key is shown once. Revoke it here at any time.</p><form method="post" class="ent-form">{% csrf_token %}{% for field in form %}<label>{{ field.label }}{{ field }}{% for error in field.errors %}<small class="ent-error">{{ error }}</small>{% endfor %}</label>{% endfor %}<button type="submit">Create API key</button></form>{% if new_token %}<h3>Copy this key now</h3><code class="ent-token">{{ new_token }}</code>{% endif %}</section>
+{% endif %}<section class="ent-panel"><h2>Available integration endpoint</h2><p>Send a GET request with an <code>Authorization: Bearer &lt;API_KEY&gt;</code> header. Responses contain scoped current inventory, open procurement counts, and open sales invoice counts.</p><code class="ent-token">GET{% url 'enterprise:integration_summary_api' '00000000-0000-0000-0000-000000000000' %}</code><p class="ent-muted">This endpoint is read-only. It does not initiate payments, post accounting entries, or book logistics services.</p></section>
+<section class="ent-panel"><h2>API clients</h2><div class="ent-table-wrap"><table class="ent-table"><thead><tr><th>Client</th><th>Provider</th><th>Factory</th><th>Key prefix</th><th>Last used</th><th>Status</th>{% if can_manage %}<th>Action</th>{% endif %}</tr></thead><tbody>{% for app in integrations %}<tr><td>{{ app.name }}</td><td>{{ app.get_provider_display }}</td><td>{{ app.factory.name }}</td><td>{{ app.token_prefix }}â€¦</td><td>{{ app.last_used_at|default:"Never" }}</td><td>{% if app.is_active %}Active{% else %}Revoked{% endif %}</td>{% if can_manage %}<td><form method="post" action="{% url 'enterprise:integration_toggle' app.pk %}">{% csrf_token %}<button class="ent-button" type="submit">{% if app.is_active %}Revoke{% else %}Enable{% endif %}</button></form></td>{% endif %}</tr>{% empty %}<tr><td colspan="{% if can_manage %}7{% else %}6{% endif %}">No API clients configured.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}
+
+
+
+
+
+

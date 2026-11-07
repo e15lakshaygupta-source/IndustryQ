@@ -1,0 +1,41 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<section class="ops-panel crm-quote-panel">
+  <div class="ops-panel-head">
+    <div><p class="crm-eyebrow">CUSTOMER RELATIONSHIP MANAGEMENT</p><h1>{{ title }}</h1><p>Build a line-item quotation for a lead. The quote number is assigned automatically when saved.</p></div>
+  </div>
+  <form method="post" class="crm-quote-form">
+    {% csrf_token %}
+    {% for error in form.non_field_errors %}<p class="error">{{ error }}</p>{% endfor %}
+    <div class="crm-quote-details">
+      {% for field in form %}
+      <div class="ops-form-field {% if field.name == 'notes' %}crm-full{% endif %}">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+        {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    <section class="crm-lines">
+      <div class="crm-lines-heading"><div><h2>Quotation items</h2><p>Add one or more products or custom items.</p></div></div>
+      {{ formset.management_form }}
+      {% for line_form in formset %}
+      <div class="crm-line-row">
+        {% for hidden in line_form.hidden_fields %}{{ hidden }}{% endfor %}
+        {% for field in line_form.visible_fields %}
+        <div class="ops-form-field {% if field.name == 'description' %}crm-line-description{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+          {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+      {% for error in formset.non_form_errors %}<p class="error">{{ error }}</p>{% endfor %}
+      <p class="crm-lines-hint">To include more items, save this quotation and create another quotation for the additional scope.</p>
+    </section>
+    <div class="ops-form-actions"><button class="ops-btn" type="submit">Create quotation</button><a href="{{ cancel_url }}">Cancel</a></div>
+  </form>
+</section>
+<style>
+  .crm-quote-panel{max-width:1120px;margin-inline:auto}.crm-eyebrow{margin:0 0 7px;color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.13em}.crm-quote-panel .ops-panel-head h1{margin:0;font-size:clamp(23px,3vw,32px);color:var(--text)}.crm-quote-panel .ops-panel-head p:not(.crm-eyebrow){margin:7px 0 0;color:var(--muted);font-size:12px}.crm-quote-form{margin-top:20px}.crm-quote-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}.crm-full{grid-column:1/-1}.crm-lines{margin-top:15px;padding:17px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}.crm-lines-heading h2{margin:0;color:var(--text);font-size:15px}.crm-lines-heading p,.crm-lines-hint{margin:5px 0 12px;color:var(--muted);font-size:11px}.crm-line-row{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(200px,1.5fr) repeat(3,minmax(95px,.55fr));gap:10px;padding:12px 0;border-top:1px solid var(--line)}.crm-line-row .ops-form-field{min-width:0}.crm-lines-hint{margin:10px 0 0}.crm-quote-form .ops-form-actions{margin-top:16px}@media(max-width:850px){.crm-line-row{grid-template-columns:repeat(2,minmax(0,1fr))}.crm-line-description{grid-column:1/-1}}@media(max-width:560px){.crm-quote-details{grid-template-columns:1fr}.crm-full{grid-column:auto}.crm-line-row{grid-template-columns:1fr}.crm-line-description{grid-column:auto}.crm-lines{padding:12px}}
+</style>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<section class="ops-panel">
+  <div class="ops-panel-head">
+    <div>
+      <h1>Production Plans &amp; Targets</h1>
+      <p class="subtitle">Operational manufacturing objectives assigned to specific facilities and product lines.</p>
+    </div>
+    {% if can_manage %}
+    <a class="ops-btn" href="{% url 'operations:plan_create' %}">+ Create Production Plan</a>
+    {% endif %}
+  </div>
+
+  <div class="table-scroll">
+    <table class="ops-table">
+      <thead>
+        <tr>
+          <th>Plan Name</th>
+          <th>Factory / Line</th>
+          <th>Product</th>
+          <th>Target Window</th>
+          <th>Target Quantity</th>
+          <th>Status</th>
+          {% if can_manage %}<th style="text-align:right;">Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for plan in plans %}
+        <tr>
+          <td><strong style="color:var(--text)">{{ plan.name }}</strong></td>
+          <td>
+            <strong>{{ plan.factory.name }}</strong>
+            <small>{{ plan.production_unit.name }} &middot; {{ plan.department.name }}</small>
+          </td>
+          <td><span class="sku-pill">{{ plan.product.sku }}</span></td>
+          <td>
+            <small style="color:var(--text)">{{ plan.start_date|date:"M d" }} &ndash; {{ plan.end_date|date:"M d, Y" }}</small>
+          </td>
+          <td><strong style="color:var(--accent)">{{ plan.target_quantity }}</strong> units</td>
+          <td>
+            <span class="badge-status {{ plan.status }}">
+              {{ plan.get_status_display }}
+            </span>
+          </td>
+          {% if can_manage %}
+          <td style="text-align:right;">
+            <a href="{% url 'operations:plan_edit' plan.pk %}" class="panel-link">Edit Plan &rarr;</a>
+          </td>
+          {% endif %}
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="empty-row">No production plans recorded for this workspace.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if plans.paginator.num_pages > 1 %}
+  <div style="display:flex;justify-content:space-between;align-items:center;padding-top:14px;color:var(--muted);font-size:12px;">
+    <span>Page {{ plans.number }} of {{ plans.paginator.num_pages }}</span>
+    <div style="display:flex;gap:8px;">
+      {% if plans.has_previous %}
+      <a href="?page={{ plans.previous_page_number }}" class="ops-btn secondary" style="padding:5px 12px;font-size:11px;">&larr; Previous</a>
+      {% endif %}
+      {% if plans.has_next %}
+      <a href="?page={{ plans.next_page_number }}" class="ops-btn secondary" style="padding:5px 12px;font-size:11px;">Next &rarr;</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title|default:"Industry Intelligence" }} | INDUSTRIQ</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261106">
+  <style>
+    .intelligence-shell{min-width:0}
+    .intelligence-shell>.wrap{width:100%;max-width:1520px;min-width:0;margin:0 auto}
+    .intelligence-kicker{margin:0 0 7px!important;color:var(--accent)!important;font-size:10px;font-weight:800;letter-spacing:.14em}
+    .intelligence-page-heading{margin:8px 0 20px}
+    .intelligence-page-heading h1{margin:0 0 7px;font-size:clamp(27px,3vw,36px);letter-spacing:-.04em}
+    .intelligence-page-heading>div>p:last-child{margin:0;color:var(--muted);font-size:13px;line-height:1.6}
+    .intelligence-shell .links{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:0 0 16px;margin:12px 0 22px;border-bottom:1px solid var(--line)}
+    .intelligence-shell .links>a{display:inline-flex;align-items:center;min-height:38px;padding:8px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--muted);font-size:12px;font-weight:650;text-decoration:none}
+    .intelligence-shell .links>a:hover,.intelligence-shell .links>a.active{border-color:var(--accent);background:var(--surface-2);color:var(--accent)}
+    .intelligence-shell .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin:18px 0}
+    .intelligence-shell .metric{display:flex;flex-direction:column;gap:7px;min-width:0;padding:16px;border:1px solid var(--line);border-radius:13px;background:var(--surface);box-shadow:var(--shadow);color:var(--muted);font-size:11px}
+    .intelligence-shell .metric strong{order:-1;color:var(--accent);font-size:clamp(22px,2.4vw,30px);font-variant-numeric:tabular-nums;letter-spacing:-.03em;overflow-wrap:anywhere}
+    .intelligence-shell .panel{min-width:0}
+    .intelligence-shell .panel>h1{font-size:clamp(24px,3vw,34px);line-height:1.2;letter-spacing:-.035em}
+    .intelligence-shell .panel>h2{font-size:17px}
+    .intelligence-section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    .intelligence-section-heading h2{margin:0}
+    .intelligence-section-heading .links{margin:0;padding:0;border:0}
+    .intelligence-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px 16px;max-width:960px;margin:14px 0}
+    .intelligence-form-field{display:grid;align-content:start;gap:6px;min-width:0}
+    .intelligence-form-field.full,.intelligence-form-actions,.intelligence-form>.error{grid-column:1/-1}
+    .intelligence-form-field label{color:var(--muted);font-size:11px;font-weight:700}
+    .intelligence-form-field input,.intelligence-form-field select,.intelligence-form-field textarea{width:100%;min-width:0;min-height:42px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);color:var(--text);font:inherit;font-size:13px}
+    .intelligence-form-field textarea{min-height:100px;resize:vertical}
+    .intelligence-form-field small{color:var(--muted);font-size:11px;line-height:1.5}
+    .intelligence-form-actions{display:flex;align-items:center;gap:9px;padding-top:14px;border-top:1px solid var(--line)}
+    .intelligence-shell .panel>form[method=get]{display:flex;align-items:end;flex-wrap:wrap;gap:10px;padding:13px;border:1px solid var(--line);border-radius:11px;background:var(--surface-2)}
+    .intelligence-shell .panel>form[method=get]>label{display:grid;gap:6px;margin:0;color:var(--muted);font-size:11px;font-weight:700}
+    .intelligence-shell .panel>form[method=get]>input,.intelligence-shell .panel>form[method=get]>select{width:auto;min-width:170px}
+    .intelligence-table-wrap{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;border:1px solid var(--line);border-radius:11px;background:var(--surface)}
+    .intelligence-shell table{width:100%;min-width:680px;border-collapse:separate;border-spacing:0;background:var(--surface)}
+    .intelligence-shell table th,.intelligence-shell table td{padding:11px 13px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;white-space:nowrap;font-size:12px}
+    .intelligence-shell table th{background:var(--surface-2);color:var(--muted);font-size:10px;font-weight:750;letter-spacing:.06em;text-transform:uppercase}
+    .intelligence-shell table tr:last-child td{border-bottom:0}
+    .intelligence-shell table tbody tr:hover{background:var(--surface-2)}
+    .intelligence-shell table td small{display:block;margin-top:3px;color:var(--muted);font-size:10px}
+    .intelligence-shell .notice{margin:12px 0;padding:13px 15px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;background:var(--surface-2);color:var(--muted);font-size:12px;line-height:1.6}
+    .intelligence-shell .thumb{display:block;width:min(100%,720px);max-height:460px;margin:16px 0;object-fit:contain;object-position:left center;background:var(--surface-2)}
+    .intelligence-shell nav[aria-label$="pages"]{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;color:var(--muted);font-size:12px}
+    .intelligence-shell nav[aria-label$="pages"] a{padding:7px 10px;border:1px solid var(--line);border-radius:8px;text-decoration:none}
+    @media(max-width:850px){.intelligence-shell .links{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}.intelligence-shell .links>a{flex:0 0 auto}}
+    @media(max-width:600px){.intelligence-shell .grid{grid-template-columns:repeat(2,minmax(0,1fr))}.intelligence-shell .panel{padding:15px}.intelligence-form{grid-template-columns:1fr}.intelligence-form-field.full,.intelligence-form-actions,.intelligence-form>.error{grid-column:1}.intelligence-form-actions{align-items:flex-start;flex-direction:column}.intelligence-shell .panel>form[method=get]{align-items:stretch;flex-direction:column}.intelligence-shell .panel>form[method=get]>label,.intelligence-shell .panel>form[method=get]>input,.intelligence-shell .panel>form[method=get]>select{width:100%}.intelligence-shell table th,.intelligence-shell table td{padding:10px}.intelligence-shell nav[aria-label$="pages"]{align-items:flex-start;flex-direction:column}}
+    @media(max-width:360px){.intelligence-shell .grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+{% include "partials/app_sidebar.html" %}
+<main class="app-content intelligence-shell">
+  <div class="wrap">
+    <p class="intelligence-kicker">INDUSTRIQ / QUALITY &amp; INTELLIGENCE</p>
+    <nav class="links" aria-label="Quality and intelligence tools">
+      <a class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'intelligence:home' %}">Overview</a>
+      <a class="{% if request.resolver_match.url_name == 'machines' or request.resolver_match.url_name == 'machine_create' or request.resolver_match.url_name == 'machine_edit' or request.resolver_match.url_name == 'maintenance_create' %}active{% endif %}" href="{% url 'intelligence:machines' %}">Machines &amp; maintenance</a>
+      <a class="{% if request.resolver_match.url_name == 'predictive_maintenance' %}active{% endif %}" href="{% url 'intelligence:predictive_maintenance' %}">Predictive maintenance</a>
+      <a class="{% if request.resolver_match.url_name == 'safety_incidents' %}active{% endif %}" href="{% url 'intelligence:safety_incidents' %}">Safety incidents</a>
+      <a class="{% if request.resolver_match.url_name == 'inspection_history' or request.resolver_match.url_name == 'inspection_review' %}active{% endif %}" href="{% url 'intelligence:inspection_history' %}">Inspection history</a>
+      <a class="{% if request.resolver_match.url_name == 'inspection_create' %}active{% endif %}" href="{% url 'intelligence:inspection_create' %}">Submit inspection</a>
+      <a class="{% if request.resolver_match.url_name == 'sustainability' or request.resolver_match.url_name == 'sustainability_add' or request.resolver_match.url_name == 'energy_create' %}active{% endif %}" href="{% url 'intelligence:sustainability' %}">Energy &amp; sustainability</a>
+      <a class="{% if request.resolver_match.url_name == 'assistant' %}active{% endif %}" href="{% url 'intelligence:assistant' %}">Operations assistant</a>
+    </nav>
+    {% for message in messages %}<p class="msg" role="status">{{ message }}</p>{% endfor %}
+    {% block content %}{% endblock %}
+  </div>
+</main>
+</body>
+</html>

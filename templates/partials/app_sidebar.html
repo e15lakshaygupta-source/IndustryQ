@@ -1,0 +1,229 @@
+<button class="sidebar-mobile-toggle" type="button" aria-label="Open navigation" onclick="document.body.classList.toggle('sidebar-open')">&#9776;</button>
+<div class="sidebar-scrim" onclick="document.body.classList.remove('sidebar-open')"></div>
+
+<aside class="app-sidebar">
+  <a class="sidebar-brand" href="{% url 'core:executive_dashboard' %}">
+    <span class="sidebar-mark" aria-hidden="true">
+      <svg viewBox="0 0 32 32" fill="none">
+        <rect x="5" y="16" width="4" height="10" rx="1" fill="currentColor"/>
+        <rect x="11" y="11" width="4" height="15" rx="1" fill="currentColor"/>
+        <rect x="17" y="6" width="4" height="20" rx="1" fill="currentColor"/>
+        <rect x="23" y="13" width="4" height="13" rx="1" fill="currentColor"/>
+      </svg>
+    </span>
+    <span class="sidebar-wordmark">INDUSTRI<strong>Q</strong><small>OPERATIONS, CONNECTED</small></span>
+  </a>
+
+  <nav class="sidebar-nav" aria-label="Main navigation">
+    <div class="sidebar-label">WORKSPACE</div>
+    <a href="{% url 'core:executive_dashboard' %}" class="{% if request.resolver_match.app_name == 'core' or request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      <span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+          <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+      </span>
+      Dashboard
+    </a>
+
+    <details class="sidebar-group" open><summary>Organization &amp; people</summary><div class="sidebar-group-items">
+    <a href="{% url 'organization:overview' %}" class="{% if request.resolver_match.app_name == 'organization' %}active{% endif %}">
+      <span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="2" width="16" height="20" rx="2"></rect>
+          <path d="M9 22v-4h6v4"></path>
+          <path d="M8 6h.01"></path>
+          <path d="M16 6h.01"></path>
+          <path d="M8 10h.01"></path>
+          <path d="M16 10h.01"></path>
+          <path d="M8 14h.01"></path>
+          <path d="M16 14h.01"></path>
+        </svg>
+      </span>
+      Organization
+    </a>
+    <a href="{% url 'workforce:home' %}" class="{% if request.resolver_match.app_name == 'workforce' and request.resolver_match.url_name == 'home' %}active{% endif %}">
+      <span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      </span>
+      Workforce
+    </a>
+    <a href="{% url 'workforce:employee_list' %}" class="{% if request.resolver_match.url_name == 'employee_list' or request.resolver_match.url_name == 'employee_detail' or request.resolver_match.url_name == 'employee_create' or request.resolver_match.url_name == 'employee_edit' or request.resolver_match.url_name == 'performance_create' %}active{% endif %}">Employees</a>
+    <a href="{% url 'workforce:shift_list' %}" class="{% if request.resolver_match.url_name == 'shift_list' or request.resolver_match.url_name == 'shift_assign' or request.resolver_match.url_name == 'shift_create' %}active{% endif %}">Shifts</a>
+    <a href="{% url 'workforce:attendance_list' %}" class="{% if request.resolver_match.url_name == 'attendance_list' or request.resolver_match.url_name == 'attendance_create' or request.resolver_match.url_name == 'attendance_punch' %}active{% endif %}">Attendance</a>
+    <a href="{% url 'workforce:attendance_report' %}" class="{% if request.resolver_match.url_name == 'attendance_report' %}active{% endif %}">Attendance report</a>
+    <a href="{% url 'workforce:leave_list' %}" class="{% if request.resolver_match.url_name == 'leave_list' or request.resolver_match.url_name == 'leave_review' %}active{% endif %}">Leave requests</a>
+
+    </div></details><details class="sidebar-group"><summary>Production &amp; supply</summary><div class="sidebar-group-items">
+    <a href="{% url 'operations:home' %}" class="{% if request.resolver_match.app_name == 'operations' and request.resolver_match.url_name == 'home' %}active{% endif %}">
+      <span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
+          <path d="M17 18h1"></path>
+          <path d="M12 18h1"></path>
+          <path d="M7 18h1"></path>
+        </svg>
+      </span>
+      Production
+    </a>
+    <a href="{% url 'operations:catalogue' %}" class="{% if 'catalogue' in request.resolver_match.url_name or 'product' in request.resolver_match.url_name or 'category' in request.resolver_match.url_name %}active{% endif %}">Product catalogue</a>
+    <a href="{% url 'operations:plans' %}" class="{% if 'plan' in request.resolver_match.url_name %}active{% endif %}">Production plans</a>
+    <a href="{% url 'operations:orders' %}" class="{% if 'order' in request.resolver_match.url_name %}active{% endif %}">Work orders</a>
+    <a href="{% url 'operations:entry_create' %}" class="{% if request.resolver_match.url_name == 'entry_create' %}active{% endif %}">Record daily output</a>
+    <a href="{% url 'operations:history' %}" class="{% if request.resolver_match.url_name == 'history' %}active{% endif %}">Production history</a>
+    <a href="{% url 'operations:unit_performance' %}" class="{% if request.resolver_match.url_name == 'unit_performance' %}active{% endif %}">Unit performance</a>
+    <a href="{% url 'operations:inventory' %}" class="{% if request.resolver_match.url_name == 'inventory' or request.resolver_match.url_name == 'inventory_form' %}active{% endif %}">Inventory &amp; procurement</a>
+    <a href="{% url 'operations:digital_twin' %}" class="{% if request.resolver_match.url_name == 'digital_twin' %}active{% endif %}">
+      <span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 2 9 5-9 5-9-5 9-5Z"></path><path d="m3 12 9 5 9-5"></path><path d="m3 17 9 5 9-5"></path>
+        </svg>
+      </span>
+      Digital twin
+    </a>
+    <a href="{% url 'operations:smart_warehouse' %}" class="{% if request.resolver_match.url_name == 'smart_warehouse' %}active{% endif %}">Smart warehouse</a>
+    <a href="{% url 'operations:supply_chain' %}" class="{% if request.resolver_match.url_name == 'supply_chain' %}active{% endif %}">Supply chain intelligence</a>
+
+    </div></details><details class="sidebar-group"><summary>Customer &amp; sales</summary><div class="sidebar-group-items">
+    <a href="{% url 'crm:dashboard' %}" class="{% if request.resolver_match.app_name == 'crm' %}active{% endif %}">Customer relationship management</a>
+    </div></details><details class="sidebar-group"><summary>Billing &amp; tax</summary><div class="sidebar-group-items">
+    <a href="{% url 'billing:home' %}" class="{% if request.resolver_match.app_name == 'billing' and request.resolver_match.url_name != 'gst_report' and request.resolver_match.url_name != 'gst_reconciliation_export' or request.resolver_match.url_name == 'billing' or request.resolver_match.url_name == 'billing_create' or request.resolver_match.url_name == 'billing_detail' or request.resolver_match.url_name == 'customer_create' %}active{% endif %}">Sales &amp; purchasing billing</a>
+    {% if request.user.is_superuser or perms.billing.manage_billing or perms.operations.manage_billing or request.user.profile.role == 'super_admin' or request.user.profile.role == 'company_admin' or request.user.profile.role == 'factory_manager' or request.user.profile.role == 'department_manager' %}
+    <a href="{% url 'billing:document_create' %}" class="{% if request.resolver_match.url_name == 'document_create' %}active{% endif %}">Create sales invoice</a>
+    {% endif %}
+    <a href="{% url 'billing:gst_report' %}" class="{% if request.resolver_match.url_name == 'gst_report' or request.resolver_match.url_name == 'gst_reconciliation_export' %}active{% endif %}">GST reports &amp; reconciliation</a>
+
+    </div></details><details class="sidebar-group"><summary>Quality &amp; maintenance</summary><div class="sidebar-group-items">
+    <a href="{% url 'intelligence:home' %}" class="{% if request.resolver_match.app_name == 'intelligence' and request.resolver_match.url_name == 'home' %}active{% endif %}">
+      <span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+      </span>
+      Quality &amp; intelligence
+    </a>
+    <a href="{% url 'intelligence:sustainability' %}" class="{% if request.resolver_match.url_name == 'sustainability' or request.resolver_match.url_name == 'sustainability_add' %}active{% endif %}">
+      <span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22c5-2 8-7 8-14-6 0-11 3-13 8-1 3 1 5 5 6Z"></path><path d="M4 21c2-4 5-7 10-10"></path>
+        </svg>
+      </span>
+      Energy &amp; sustainability
+    </a>
+    <a href="{% url 'intelligence:predictive_maintenance' %}" class="{% if request.resolver_match.url_name == 'predictive_maintenance' %}active{% endif %}">
+      <span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12h4l3-8 4 16 3-8h4"></path>
+        </svg>
+      </span>
+      Predictive maintenance
+    </a>
+    <a href="{% url 'intelligence:machines' %}" class="{% if request.resolver_match.url_name == 'machines' or request.resolver_match.url_name == 'machine_create' or request.resolver_match.url_name == 'machine_edit' or request.resolver_match.url_name == 'maintenance_create' %}active{% endif %}">Machines &amp; maintenance</a>
+    <a href="{% url 'intelligence:safety_incidents' %}" class="{% if request.resolver_match.url_name == 'safety_incidents' %}active{% endif %}">Safety incidents</a>
+    <a href="{% url 'intelligence:inspection_history' %}" class="{% if request.resolver_match.url_name == 'inspection_history' or request.resolver_match.url_name == 'inspection_review' %}active{% endif %}">Quality inspections</a>
+    <a href="{% url 'intelligence:inspection_create' %}" class="{% if request.resolver_match.url_name == 'inspection_create' %}active{% endif %}">Submit inspection</a>
+    <a href="{% url 'intelligence:energy_create' %}" class="{% if request.resolver_match.url_name == 'energy_create' %}active{% endif %}">Record energy reading</a>
+    <a href="{% url 'intelligence:sustainability' %}" class="{% if request.resolver_match.url_name == 'sustainability' or request.resolver_match.url_name == 'sustainability_add' %}active{% endif %}">Energy &amp; sustainability</a>
+
+    </div></details><details class="sidebar-group"><summary>Intelligence &amp; reports</summary><div class="sidebar-group-items">
+    <a href="{% url 'intelligence:assistant' %}" class="{% if request.resolver_match.url_name == 'assistant' %}active{% endif %}">
+      <span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"></path>
+        </svg>
+      </span>
+      AI assistant
+    </a>
+    <a href="{% url 'reports:index' %}" class="{% if request.resolver_match.app_name == 'reports' and request.resolver_match.url_name == 'index' %}active{% endif %}">
+      <span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+      </span>
+      Reports &amp; exports
+    </a>
+    <a href="{% url 'reports:executive' %}" class="{% if request.resolver_match.url_name == 'executive' %}active{% endif %}">Executive report</a>
+    <a href="{% url 'reports:workforce' %}" class="{% if request.resolver_match.url_name == 'workforce' %}active{% endif %}">Workforce report</a>
+    <a href="{% url 'reports:production' %}" class="{% if request.resolver_match.url_name == 'production' %}active{% endif %}">Production report</a>
+    <a href="{% url 'reports:quality_energy' %}" class="{% if request.resolver_match.url_name == 'quality_energy' %}active{% endif %}">Quality &amp; energy report</a>
+    <a href="{% url 'reports:inventory' %}" class="{% if request.resolver_match.url_name == 'inventory' %}active{% endif %}">Inventory report</a>
+    <a href="{% url 'reports:machines' %}" class="{% if request.resolver_match.url_name == 'machines' %}active{% endif %}">Machine report</a>
+    <a href="{% url 'reports:notifications' %}" class="{% if request.resolver_match.url_name == 'notifications' %}active{% endif %}">
+      <span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+      </span>
+      Notifications{% if unread_notification_count %}<b class="notification-badge">{{ unread_notification_count }}</b>{% endif %}
+    </a>
+
+    </div></details><details class="sidebar-group"><summary>Account &amp; settings</summary><div class="sidebar-group-items">
+    <a href="{% url 'profile' %}" class="{% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+      <span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"></circle>
+          <path d="M6 21v-2a6 6 0 0 1 12 0v2"></path>
+        </svg>
+      </span>
+      My profile
+    </a>
+    {% if request.user.is_superuser or request.user.profile.role == 'super_admin' %}
+    <a href="{% url 'user_management' %}" class="{% if request.resolver_match.url_name == 'user_management' %}active{% endif %}">Manage users &amp; roles</a>
+    <a href="{% url 'user_create' %}" class="{% if request.resolver_match.url_name == 'user_create' %}active{% endif %}">Create user</a>
+    <a href="{% url 'audit_history' %}" class="{% if request.resolver_match.url_name == 'audit_history' %}active{% endif %}">
+      <span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+      </span>
+      Audit history
+    </a>
+    {% endif %}
+    {% if request.user.employee_record %}
+    <a href="{% url 'workforce:portal' %}" class="{% if request.resolver_match.url_name == 'portal' %}active{% endif %}">
+      <span>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="16" rx="3"></rect>
+          <circle cx="12" cy="10" r="3"></circle>
+          <path d="M7 17a5 5 0 0 1 10 0"></path>
+        </svg>
+      </span>
+      Employee portal
+    </a>
+    {% endif %}
+    </div></details>
+  </nav>
+
+  <div class="sidebar-bottom">
+    <div class="theme-toggle" aria-label="Active color theme">
+      <span class="theme-icon" id="theme-icon">&#9790;</span>
+      <span id="theme-label">Dark blue / white / gold</span>
+    </div>
+    <a class="sidebar-user sidebar-profile-link" href="{% url 'profile' %}" aria-label="Open profile settings">
+      <span class="user-dot">{{ request.user.username|first|upper }}</span>
+      <span>{{ request.user.get_full_name|default:request.user.username }}<small>{{ request.user.profile.get_role_display }}</small></span>
+    </a>
+    <form method="post" action="{% url 'logout' %}">
+      {% csrf_token %}
+      <button class="sidebar-logout" type="submit">Sign out &#8599;</button>
+    </form>
+  </div>
+</aside>
+
+<script>
+document.documentElement.dataset.theme = 'dark';
+</script>
+
+

@@ -1,0 +1,41 @@
+{% extends "intelligence/base.html" %}
+{% block content %}
+<header class="intelligence-page-heading">
+  <div><p class="intelligence-kicker">QUALITY / ASSETS / SAFETY / ENERGY</p><h1>Smart factory intelligence</h1><p class="muted">A scoped overview of inspections, equipment health, safety, and resource readings.</p></div>
+</header>
+<section class="grid" aria-label="Intelligence summary">
+  <article class="metric">Inspections<strong>{{ inspection_count }}</strong></article>
+  <article class="metric">Pending human review<strong>{{ pending_inspections }}</strong></article>
+  <article class="metric">Marked failed<strong>{{ failed_inspections }}</strong></article>
+  <article class="metric">Registered machines<strong>{{ machine_count }}</strong></article>
+  <article class="metric">Open maintenance<strong>{{ maintenance_open }}</strong></article>
+  <article class="metric">Open safety incidents<strong>{{ incident_open }}</strong></article>
+  <article class="metric">Energy today<strong>{% if energy_today != None %}{{ energy_today }} kWh{% else %}No data{% endif %}</strong></article>
+</section>
+<nav class="links" aria-label="Intelligence actions">
+  <a href="{% url 'intelligence:machines' %}">Machine register</a>
+  <a href="{% url 'intelligence:safety_incidents' %}">Safety incidents</a>
+  <a href="{% url 'intelligence:inspection_history' %}">Inspection history</a>
+  <a href="{% url 'intelligence:sustainability' %}">Energy &amp; sustainability</a>
+  {% if can_manage %}
+  <a href="{% url 'intelligence:machine_create' %}">Register machine</a>
+  <a href="{% url 'intelligence:maintenance_create' %}">Schedule maintenance</a>
+  <a href="{% url 'intelligence:inspection_create' %}">Submit quality inspection</a>
+  {% endif %}
+</nav>
+<p class="notice">Camera inspection uploads are stored for human review. Automated defect detection requires a trained model and is not active in this deployment.</p>
+<section class="panel">
+  <h2>Recent inspections</h2>
+  <div class="intelligence-table-wrap"><table><thead><tr><th>Product</th><th>Factory</th><th>Status</th><th>Submitted</th><th>Action</th></tr></thead><tbody>
+    {% for row in recent_inspections %}<tr><td>{{ row.product_reference }}</td><td>{{ row.factory.name }}</td><td>{{ row.get_status_display }}{% if row.defect_label %}<small>{{ row.defect_label }}</small>{% endif %}</td><td>{{ row.created_at|date:"M d, Y H:i" }}</td><td>{% if can_manage %}<a href="{% url 'intelligence:inspection_review' row.pk %}">Review</a>{% else %}&mdash;{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="5">No inspections submitted.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+<section class="panel">
+  <h2>Recent energy readings</h2>
+  <div class="intelligence-table-wrap"><table><thead><tr><th>Meter</th><th>Factory</th><th>Reading time</th><th>Consumption</th></tr></thead><tbody>
+    {% for row in energy_readings %}<tr><td>{{ row.meter_reference }}</td><td>{{ row.factory.name }}</td><td>{{ row.reading_at }}</td><td>{% if row.consumption_kwh != None %}{{ row.consumption_kwh }} kWh{% else %}Baseline reading{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="4">No energy readings recorded.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endblock %}

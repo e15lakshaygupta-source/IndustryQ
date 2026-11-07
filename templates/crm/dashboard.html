@@ -1,0 +1,103 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<header class="crm-hero">
+  <div><p class="crm-eyebrow">CUSTOMER RELATIONSHIP MANAGEMENT</p><h1>Build stronger customer relationships</h1><p>Manage prospects, capture enquiries, prepare quotations, and keep every follow-up moving.</p>
+    <div class="crm-actions">
+      <a class="ops-btn" href="{% url 'crm:lead_create' %}">+ Add lead</a>
+      <a class="ops-btn secondary" href="{% url 'crm:enquiry_create' %}">Record enquiry</a>
+      <a class="ops-btn secondary" href="{% url 'crm:quotation_create' %}">Create quotation</a>
+      <a class="ops-btn secondary" href="{% url 'crm:follow_up_create' %}">Schedule follow-up</a>
+    </div>
+  </div>
+  <div class="crm-hero-aside"><span class="crm-hero-mark" aria-hidden="true">↗</span><div><strong>Sales pipeline</strong><span>From first contact to closed business</span></div></div>
+</header>
+
+<section class="crm-metrics" aria-label="CRM summary">
+  <article><span>Open opportunities</span><strong>{{ open_lead_count }}</strong><small>Active leads in your pipeline</small></article>
+  <article><span>Pipeline value</span><strong>₹{{ pipeline_value|floatformat:2 }}</strong><small>Excludes won and lost leads</small></article>
+  <article><span>Follow-ups due</span><strong>{{ open_follow_up_count }}</strong><small>{% if overdue_follow_up_count %}<em>{{ overdue_follow_up_count }} overdue</em>{% else %}Keep conversations moving{% endif %}</small></article>
+  <article><span>Customers</span><strong>{{ customer_count }}</strong><small>Active customer records</small></article>
+</section>
+
+<section class="ops-panel crm-panel">
+  <div class="ops-panel-head crm-panel-head"><div><p class="crm-section-kicker">OPPORTUNITY FLOW</p><h2>Sales pipeline</h2><p>Track each opportunity from first contact through close.</p></div><a class="crm-link" href="{% url 'crm:lead_create' %}">Add opportunity →</a></div>
+  <div class="crm-stage-grid">
+    {% for row in stage_rows %}
+    <article class="crm-stage-card crm-stage-{{ row.stage }}">
+      <div class="crm-stage-head"><span>{{ row.label }}</span><strong>{{ row.count }}</strong></div>
+      <b>₹{{ row.value|floatformat:0 }}</b><small>opportunity value</small>
+      <div class="crm-stage-track"><span style="width:{% if open_lead_count %}{% widthratio row.count open_lead_count 100 %}{% else %}0{% endif %}%"></span></div>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+
+<div class="crm-columns">
+  <section class="ops-panel crm-panel">
+    <div class="ops-panel-head crm-panel-head"><div><p class="crm-section-kicker">PROSPECTS</p><h2>Recent leads</h2><p>Opportunities updated most recently.</p></div><a class="crm-link" href="{% url 'crm:lead_create' %}">+ New lead</a></div>
+    <div class="crm-list">
+      {% for lead in leads %}
+      <article class="crm-list-row">
+        <span class="crm-avatar">{{ lead.company_name|first|upper }}</span>
+        <div class="crm-list-main"><strong>{{ lead.company_name }}</strong><small>{{ lead.contact_name }}{% if lead.factory %} · {{ lead.factory.name }}{% endif %}</small></div>
+        <div class="crm-list-end"><form method="post" action="{% url 'crm:lead_stage_update' lead.pk %}" class="crm-status-form">{% csrf_token %}<select name="stage" aria-label="Sales stage for {{ lead.company_name }}">{% for value,label in lead_stages %}<option value="{{ value }}" {% if lead.stage == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button type="submit">Update</button></form><strong>₹{{ lead.estimated_value|floatformat:0 }}</strong></div>
+      </article>
+      {% empty %}<div class="crm-empty"><strong>No leads yet</strong><span>Add a prospect to start tracking your sales pipeline.</span><a href="{% url 'crm:lead_create' %}">Add your first lead →</a></div>{% endfor %}
+    </div>
+  </section>
+
+  <section class="ops-panel crm-panel">
+    <div class="ops-panel-head crm-panel-head"><div><p class="crm-section-kicker">NEXT STEPS</p><h2>Follow-ups</h2><p>Calls and actions scheduled for your team.</p></div><a class="crm-link" href="{% url 'crm:follow_up_create' %}">Schedule →</a></div>
+    <div class="crm-list">
+      {% for item in follow_ups %}
+      <article class="crm-follow-row">
+        <span class="crm-follow-date"><b>{{ item.due_at|date:"d" }}</b><small>{{ item.due_at|date:"M" }}</small></span>
+        <div class="crm-list-main"><strong>{{ item.subject }}</strong><small>{% if item.lead %}{{ item.lead.company_name }}{% else %}{{ item.customer.name }}{% endif %} · {{ item.assigned_to|default:"Unassigned" }}</small></div>
+        {% if item.status == 'open' %}<form method="post" action="{% url 'crm:follow_up_complete' item.pk %}">{% csrf_token %}<button class="crm-complete" type="submit" aria-label="Mark {{ item.subject }} complete">Done</button></form>{% else %}<span class="crm-pill crm-pill-won">Done</span>{% endif %}
+      </article>
+      {% empty %}<div class="crm-empty"><strong>Nothing scheduled</strong><span>Add follow-ups so no customer conversation is missed.</span><a href="{% url 'crm:follow_up_create' %}">Schedule a follow-up →</a></div>{% endfor %}
+    </div>
+  </section>
+</div>
+
+<div class="crm-columns crm-columns-bottom">
+  <section class="ops-panel crm-panel">
+    <div class="ops-panel-head crm-panel-head"><div><p class="crm-section-kicker">CUSTOMER DIRECTORY</p><h2>Customers</h2><p>Existing customer records available for sales conversations.</p></div>{% if can_manage %}<a class="crm-link" href="{% url 'billing:customer_create' %}">+ Add customer</a>{% endif %}</div>
+    <div class="crm-list">
+      {% for customer in customers %}
+      <a class="crm-list-row crm-customer-row" href="{% url 'billing:customer_detail' customer.pk %}">
+        <span class="crm-avatar crm-avatar-customer">{{ customer.name|first|upper }}</span>
+        <div class="crm-list-main"><strong>{{ customer.name }}</strong><small>{{ customer.customer_id }}{% if customer.state %} · {{ customer.state }}{% endif %}</small></div>
+        <span class="crm-customer-type">{{ customer.get_customer_type_display }}</span>
+      </a>
+      {% empty %}<div class="crm-empty"><strong>No active customers found</strong><span>Customer records are shared with Billing.</span>{% if can_manage %}<a href="{% url 'billing:customer_create' %}">Add a customer →</a>{% endif %}</div>{% endfor %}
+    </div>
+  </section>
+
+  <section class="ops-panel crm-panel">
+    <div class="ops-panel-head crm-panel-head"><div><p class="crm-section-kicker">CUSTOMER VOICE</p><h2>Recent enquiries</h2><p>Incoming requests linked to sales leads.</p></div><a class="crm-link" href="{% url 'crm:enquiry_create' %}">Record →</a></div>
+    <div class="crm-list">
+      {% for enquiry in enquiries %}
+      <article class="crm-list-row"><span class="crm-enquiry-icon" aria-hidden="true">?</span><div class="crm-list-main"><strong>{{ enquiry.subject }}</strong><small>{{ enquiry.lead.company_name }} · {{ enquiry.received_at|date:"M j, Y" }}</small></div><form method="post" action="{% url 'crm:enquiry_status_update' enquiry.pk %}" class="crm-status-form">{% csrf_token %}<select name="status" aria-label="Status for {{ enquiry.subject }}">{% for value,label in enquiry_statuses %}<option value="{{ value }}" {% if enquiry.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button type="submit">Save</button></form></article>
+      {% empty %}<div class="crm-empty"><strong>No enquiries recorded</strong><span>Keep customer requests and requirements in one place.</span><a href="{% url 'crm:enquiry_create' %}">Record an enquiry →</a></div>{% endfor %}
+    </div>
+  </section>
+
+  <section class="ops-panel crm-panel crm-quotation-panel">
+    <div class="ops-panel-head crm-panel-head"><div><p class="crm-section-kicker">PROPOSALS</p><h2>Quotations</h2><p>Commercial proposals shared with prospects.</p></div><a class="crm-link" href="{% url 'crm:quotation_create' %}">+ Create quote</a></div>
+    <div class="crm-list">
+      {% for quote in quotations %}
+      <article class="crm-list-row"><span class="crm-quote-icon" aria-hidden="true">Q</span><div class="crm-list-main"><strong>{{ quote.number }}</strong><small>{{ quote.lead.company_name }} · Valid to {{ quote.valid_until|date:"M j, Y" }}</small></div><div class="crm-list-end"><form method="post" action="{% url 'crm:quotation_status_update' quote.pk %}" class="crm-status-form">{% csrf_token %}<select name="status" aria-label="Status for quotation {{ quote.number }}">{% for value,label in quotation_statuses %}<option value="{{ value }}" {% if quote.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><button type="submit">Save</button></form><strong>₹{{ quote.total|floatformat:2 }}</strong></div></article>
+      {% empty %}<div class="crm-empty"><strong>No quotations yet</strong><span>Create a line-item proposal from a sales lead.</span><a href="{% url 'crm:quotation_create' %}">Create a quotation →</a></div>{% endfor %}
+    </div>
+  </section>
+</div>
+
+<style>
+  .crm-hero{display:flex;justify-content:space-between;align-items:center;gap:22px;margin-bottom:15px;padding:clamp(23px,3vw,36px);border:1px solid var(--line);border-radius:17px;background:radial-gradient(ellipse at 2% 0%,color-mix(in srgb,var(--accent) 12%,transparent),transparent 43%),var(--surface);box-shadow:0 12px 34px rgba(13,31,56,.05)}.crm-eyebrow,.crm-section-kicker{margin:0 0 7px;color:var(--accent);font-size:9px;font-weight:800;letter-spacing:.14em}.crm-hero h1{max-width:700px;margin:0;color:var(--text);font-size:clamp(26px,3.2vw,38px);line-height:1.13;letter-spacing:-.035em}.crm-hero>div:first-child>p:not(.crm-eyebrow){margin:9px 0 16px;color:var(--muted);font-size:12px;line-height:1.6}.crm-actions{display:flex;flex-wrap:wrap;gap:8px}.crm-hero-aside{display:flex;align-items:center;gap:12px;flex:none;padding:15px 18px;border:1px solid var(--line);border-radius:13px;background:color-mix(in srgb,var(--accent) 4%,var(--surface))}.crm-hero-mark{display:grid;place-items:center;width:37px;height:37px;border-radius:11px;background:color-mix(in srgb,var(--accent) 12%,var(--surface));color:var(--accent);font-size:20px;font-weight:800}.crm-hero-aside strong,.crm-hero-aside span{display:block}.crm-hero-aside strong{color:var(--text);font-size:12px}.crm-hero-aside span{margin-top:4px;color:var(--muted);font-size:10px}
+  .crm-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}.crm-metrics article{min-width:0;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}.crm-metrics article>span,.crm-metrics small{display:block;color:var(--muted);font-size:10px}.crm-metrics strong{display:block;margin:5px 0;color:var(--text);font-size:22px;letter-spacing:-.02em}.crm-metrics em{color:var(--warning);font-style:normal;font-weight:750}
+  .crm-panel{min-width:0;margin-bottom:14px;overflow:hidden}.crm-panel-head{align-items:flex-start;gap:12px}.crm-panel-head h2{margin:0;color:var(--text);font-size:16px;letter-spacing:-.015em}.crm-panel-head>div>p:not(.crm-section-kicker){margin:5px 0 0;color:var(--muted);font-size:10px}.crm-section-kicker{margin-bottom:5px;font-size:8px}.crm-link{flex:none;color:var(--accent);font-size:10px;font-weight:750;text-decoration:none;white-space:nowrap}.crm-link:hover{text-decoration:underline}.crm-stage-grid{display:grid;grid-template-columns:repeat(6,minmax(100px,1fr));gap:9px}.crm-stage-card{padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2)}.crm-stage-head{display:flex;align-items:center;justify-content:space-between;gap:6px;color:var(--muted);font-size:10px}.crm-stage-head strong{display:grid;place-items:center;min-width:21px;height:21px;padding:0 5px;border-radius:50%;background:var(--surface);color:var(--text);font-size:9px}.crm-stage-card>b{display:block;margin-top:10px;color:var(--text);font-size:16px}.crm-stage-card>small{color:var(--muted);font-size:9px}.crm-stage-track{height:3px;margin-top:10px;overflow:hidden;border-radius:3px;background:var(--line)}.crm-stage-track span{display:block;height:100%;border-radius:3px;background:var(--accent)}.crm-stage-won .crm-stage-track span{background:var(--success)}.crm-stage-lost .crm-stage-track span{background:var(--warning)}
+  .crm-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.crm-columns .crm-panel{margin-bottom:0}.crm-columns-bottom{margin-top:14px;grid-template-columns:repeat(2,minmax(0,1fr))}.crm-list{padding:0 15px}.crm-list-row{display:flex;align-items:center;gap:10px;min-width:0;padding:11px 0;border-bottom:1px solid var(--line)}.crm-list-row:last-child{border-bottom:0}.crm-list-main{flex:1;min-width:0}.crm-list-main strong,.crm-list-main small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.crm-list-main strong{color:var(--text);font-size:10px}.crm-list-main small{margin-top:3px;color:var(--muted);font-size:9px}.crm-avatar,.crm-supplier-mark{display:grid;place-items:center;flex:none;width:31px;height:31px;border:1px solid var(--line);border-radius:9px;background:color-mix(in srgb,var(--accent) 8%,var(--surface));color:var(--accent);font-size:10px;font-weight:800}.crm-avatar-customer{border-radius:50%}.crm-list-end{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:none}.crm-list-end>strong{color:var(--text);font-size:10px}.crm-status-form{display:flex;align-items:center;gap:4px}.crm-status-form select{max-width:118px;padding:4px 5px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--text);font-size:8px}.crm-status-form button{padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--accent);font-size:8px;font-weight:700;cursor:pointer}.crm-pill{display:inline-flex;align-items:center;padding:4px 7px;border-radius:20px;background:var(--surface-2);color:var(--muted);font-size:8px;font-weight:750;white-space:nowrap}.crm-pill-qualified,.crm-pill-proposal,.crm-pill-in_progress,.crm-pill-sent{background:color-mix(in srgb,var(--accent) 10%,var(--surface));color:var(--accent)}.crm-pill-negotiation,.crm-pill-open,.crm-pill-draft{background:color-mix(in srgb,var(--warning) 12%,var(--surface));color:var(--warning)}.crm-pill-won,.crm-pill-accepted,.crm-pill-quoted,.crm-pill-completed{background:color-mix(in srgb,var(--success) 10%,var(--surface));color:var(--success)}.crm-pill-lost,.crm-pill-rejected,.crm-pill-closed,.crm-pill-expired{background:var(--surface-2);color:var(--muted)}.crm-follow-row{display:flex;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid var(--line)}.crm-follow-row:last-child{border-bottom:0}.crm-follow-date{display:flex;flex:none;flex-direction:column;align-items:center;justify-content:center;width:34px;height:36px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2)}.crm-follow-date b{color:var(--text);font-size:12px;line-height:1}.crm-follow-date small{margin-top:3px;color:var(--muted);font-size:8px;text-transform:uppercase}.crm-complete{padding:5px 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--accent);font-size:9px;font-weight:700;cursor:pointer}.crm-complete:hover{background:color-mix(in srgb,var(--accent) 8%,var(--surface))}.crm-customer-row{text-decoration:none}.crm-customer-row:hover .crm-list-main strong{color:var(--accent)}.crm-customer-type{flex:none;color:var(--muted);font-size:9px}.crm-enquiry-icon,.crm-quote-icon{display:grid;place-items:center;flex:none;width:29px;height:29px;border:1px solid var(--line);border-radius:9px;color:var(--accent);font-size:12px;font-weight:800}.crm-quote-icon{background:color-mix(in srgb,var(--accent) 8%,var(--surface));font-size:9px}.crm-empty{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:19px 4px;color:var(--muted);font-size:10px}.crm-empty strong{color:var(--text);font-size:11px}.crm-empty a{margin-top:3px;color:var(--accent);font-size:10px;font-weight:750;text-decoration:none}
+  @media(max-width:1100px){.crm-stage-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.crm-hero-aside{display:none}}@media(max-width:760px){.crm-columns,.crm-columns-bottom{grid-template-columns:1fr}.crm-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:500px){.crm-hero{padding:19px}.crm-actions .ops-btn{flex:1;justify-content:center}.crm-stage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.crm-section-kicker{font-size:7px}.crm-panel-head{flex-direction:column}.crm-list-end{gap:4px}}
+</style>
+{% endblock %}

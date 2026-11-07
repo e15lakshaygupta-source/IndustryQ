@@ -1,0 +1,96 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<section class="ops-panel">
+  <div class="ops-panel-head">
+    <div>
+      <h1>Production Output History</h1>
+      <p class="subtitle">Complete audit log of all floor submissions, shift yields, and downtime tracking.</p>
+    </div>
+    {% if can_manage %}
+    <a class="ops-btn" href="{% url 'operations:entry_create' %}">+ Record New Output</a>
+    {% endif %}
+  </div>
+
+  <form method="get" class="filter-bar">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">From</label>
+      <input type="date" name="start" value="{{ start }}">
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;">To</label>
+      <input type="date" name="end" value="{{ end }}">
+    </div>
+    <div style="display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;">
+      <button class="ops-btn" type="submit">Filter Range</button>
+      <button class="ops-btn secondary" name="format" value="csv" type="submit">&#10515; Export CSV</button>
+      {% if start or end %}
+      <a href="{% url 'operations:history' %}" class="ops-btn secondary">Clear Filter</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <div class="table-scroll">
+    <table class="ops-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Factory / Line</th>
+          <th>Product SKU</th>
+          <th>Work Order #</th>
+          <th>Actual</th>
+          <th>Rejected</th>
+          <th>Good Output</th>
+          <th>Downtime</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in entries %}
+        <tr>
+          <td><strong style="color:var(--text)">{{ row.production_date|date:"M d, Y" }}</strong></td>
+          <td>
+            <strong>{{ row.factory.name }}</strong>
+            <small>{{ row.production_unit.name }} &middot; {{ row.department.name }}</small>
+          </td>
+          <td><span class="sku-pill">{{ row.product.sku }}</span></td>
+          <td>
+            {% if row.work_order %}
+            <span style="font-family:monospace;font-size:12px;color:var(--text)">{{ row.work_order.order_number }}</span>
+            {% else %}
+            <span style="color:var(--muted)">&mdash;</span>
+            {% endif %}
+          </td>
+          <td>{{ row.actual_quantity }}</td>
+          <td><span style="color:var(--warning)">{{ row.rejected_quantity }}</span></td>
+          <td><strong style="color:var(--accent)">{{ row.good_quantity }}</strong></td>
+          <td>
+            {% if row.downtime_minutes %}
+            <span style="color:var(--danger);font-weight:600;">{{ row.downtime_minutes }} min</span>
+            {% else %}
+            <span style="color:var(--muted)">0 min</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="empty-row">No production history entries found for the selected period.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if entries.paginator.num_pages > 1 %}
+  <div style="display:flex;justify-content:space-between;align-items:center;padding-top:14px;color:var(--muted);font-size:12px;">
+    <span>Page {{ entries.number }} of {{ entries.paginator.num_pages }}</span>
+    <div style="display:flex;gap:8px;">
+      {% if entries.has_previous %}
+      <a href="?start={{ start }}&end={{ end }}&page={{ entries.previous_page_number }}" class="ops-btn secondary" style="padding:5px 12px;font-size:11px;">&larr; Previous</a>
+      {% endif %}
+      {% if entries.has_next %}
+      <a href="?start={{ start }}&end={{ end }}&page={{ entries.next_page_number }}" class="ops-btn secondary" style="padding:5px 12px;font-size:11px;">Next &rarr;</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

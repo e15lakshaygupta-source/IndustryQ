@@ -1,0 +1,79 @@
+{% extends "workforce/base.html" %}
+{% block content %}
+<section class="panel">
+  <div class="workforce-profile-heading">
+    <div>
+      <p class="workforce-eyebrow">EMPLOYEE PROFILE</p>
+      <h1>{{ employee.first_name }} {{ employee.last_name }}</h1>
+      <p class="workforce-profile-meta">{{ employee.employee_id }} &middot; {{ employee.designation }} &middot; <span class="workforce-status {{ employee.employment_status }}">{{ employee.get_employment_status_display }}</span></p>
+    </div>
+    {% if can_manage %}
+    <div class="workforce-actions">
+      <a class="button" href="{% url 'workforce:employee_edit' employee.pk %}">Edit profile</a>
+      <a class="button secondary" href="{% url 'workforce:performance_create' employee.pk %}">Add performance record</a>
+    </div>
+    {% endif %}
+  </div>
+  <dl class="workforce-profile">
+    <div><dt>Factory</dt><dd>{{ employee.factory.name }}</dd></div>
+    <div><dt>Department</dt><dd>{{ employee.department.name }}</dd></div>
+    <div><dt>Email</dt><dd>{{ employee.email|default:"&mdash;" }}</dd></div>
+    <div><dt>Phone</dt><dd>{{ employee.phone|default:"&mdash;" }}</dd></div>
+    <div><dt>Joined</dt><dd>{{ employee.joining_date }}</dd></div>
+    <div><dt>Manager</dt><dd>{{ employee.reporting_manager|default:"&mdash;" }}</dd></div>
+  </dl>
+</section>
+<section class="panel">
+  <h2>Shift assignments</h2>
+  <div class="workforce-table-wrap">
+    <table><thead><tr><th>Shift</th><th>Hours</th><th>Start date</th><th>End date</th></tr></thead><tbody>
+      {% for assignment in assignments %}
+      <tr><td>{{ assignment.shift.name }}</td><td>{{ assignment.shift.start_time }} &ndash; {{ assignment.shift.end_time }}</td><td>{{ assignment.start_date }}</td><td>{{ assignment.end_date|default:"Current" }}</td></tr>
+      {% empty %}<tr><td colspan="4">No shift assignment recorded.</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+</section>
+<section class="panel">
+  <h2>Attendance history</h2>
+  <div class="workforce-table-wrap">
+    <table><thead><tr><th>Date</th><th>Status</th><th>Shift</th><th>Check in</th><th>Check out</th></tr></thead><tbody>
+      {% for row in attendance %}
+      <tr><td>{{ row.date }}</td><td>{{ row.get_status_display }}</td><td>{{ row.shift|default:"&mdash;" }}</td><td>{{ row.check_in|default:"&mdash;" }}</td><td>{{ row.check_out|default:"&mdash;" }}</td></tr>
+      {% empty %}<tr><td colspan="5">No attendance history.</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+</section>
+<section class="panel">
+  <h2>Leave history</h2>
+  <div class="workforce-table-wrap">
+    <table><thead><tr><th>Type</th><th>Dates</th><th>Reason</th><th>Status</th></tr></thead><tbody>
+      {% for leave in leaves %}
+      <tr><td>{{ leave.get_leave_type_display }}</td><td>{{ leave.start_date }} to {{ leave.end_date }}</td><td class="workforce-reason">{{ leave.reason }}</td><td><span class="workforce-status {{ leave.status }}">{{ leave.get_status_display }}</span></td></tr>
+      {% empty %}<tr><td colspan="4">No leave applications.</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+  {% if is_self %}
+  <h3 class="workforce-subheading">Apply for leave</h3>
+  <form method="post" class="workforce-form">
+    {% csrf_token %}<input type="hidden" name="action" value="apply_leave">
+    {% for error in leave_form.non_field_errors %}<ul class="errorlist"><li>{{ error }}</li></ul>{% endfor %}
+    {% for field in leave_form %}
+      <div class="workforce-field {% if field.name == 'reason' %}full{% endif %}">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% for error in field.errors %}<small class="error">{{ error }}</small>{% endfor %}
+      </div>
+    {% endfor %}
+    <div class="workforce-form-actions"><button class="button" type="submit">Submit leave request</button></div>
+  </form>
+  {% endif %}
+</section>
+<section class="panel">
+  <h2>Performance records</h2>
+  <div class="workforce-record-list">
+    {% for record in performance %}
+    <article><div><strong>{{ record.period_start }} &ndash; {{ record.period_end }}</strong><span>Score {{ record.score }}/100 &middot; Goals met: {{ record.goals_met }}</span></div>{% if record.notes %}<p>{{ record.notes }}</p>{% endif %}</article>
+    {% empty %}<p>No performance records.</p>{% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "workforce/base.html" %}
+{% block content %}
+<section class="panel">
+  <h1>Attendance report</h1>
+  <form method="get" aria-label="Filter attendance report">
+    <label for="attendance-start">From<input id="attendance-start" type="date" name="start" value="{{ start }}"></label>
+    <label for="attendance-end">To<input id="attendance-end" type="date" name="end" value="{{ end }}"></label>
+    <button class="button" type="submit">Generate report</button>
+    <button class="button secondary" name="format" value="csv" type="submit">Download CSV</button>
+  </form>
+  <div class="workforce-table-wrap">
+    <table>
+      <thead><tr><th>Employee</th><th>Factory</th><th>Department</th><th>Days</th><th>Present</th><th>Absent</th><th>On leave</th></tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr><td>{{ row.employee__employee_id }} &middot; {{ row.employee__first_name }} {{ row.employee__last_name }}</td><td>{{ row.employee__factory__name }}</td><td>{{ row.employee__department__name }}</td><td>{{ row.days }}</td><td>{{ row.present }}</td><td>{{ row.absent }}</td><td>{{ row.on_leave }}</td></tr>
+      {% empty %}
+        <tr><td colspan="7">No records for this period.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <nav class="workforce-pagination" aria-label="Attendance report pages">
+    <span>Page {{ rows.number }} of {{ rows.paginator.num_pages }}</span>
+    <span>
+      {% if rows.has_previous %}<a href="?start={{ start }}&amp;end={{ end }}&amp;page={{ rows.previous_page_number }}">Previous</a>{% endif %}
+      {% if rows.has_next %}<a href="?start={{ start }}&amp;end={{ end }}&amp;page={{ rows.next_page_number }}">Next</a>{% endif %}
+    </span>
+  </nav>
+</section>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<header class="supply-hero">
+  <div class="supply-hero-copy">
+    <p class="supply-eyebrow">OPERATIONS / PROCUREMENT</p>
+    <h1>Supply chain intelligence</h1>
+    <p>Monitor raw-material coverage, supplier delivery risks, and expected purchase arrivals across your factories.</p>
+    <div class="supply-hero-actions">
+      {% if can_manage %}
+      <a class="ops-btn supply-primary-action" href="{% url 'operations:inventory_form' 'procurement' %}">Create purchase request <span aria-hidden="true">→</span></a>
+      <a class="ops-btn secondary" href="{% url 'operations:material_planning' %}">Plan material purchases</a>
+      {% endif %}
+      <a class="ops-btn secondary" href="{% url 'operations:inventory' %}">View inventory</a>
+    </div>
+  </div>
+  <aside class="supply-insight">
+    <span class="supply-insight-icon" aria-hidden="true">↗</span>
+    <div>
+      <strong>Planning signal</strong>
+      <p>Coverage is based on recorded consumption over the last 30 days. Supplier signals reflect overdue open purchase orders only—not a delivery prediction.</p>
+      <small>Consumption window from {{ cutoff }}</small>
+    </div>
+  </aside>
+</header>
+
+<section class="supply-metrics" aria-label="Supply chain overview">
+  <article class="supply-metric supply-metric-alert">
+    <span class="supply-metric-icon" aria-hidden="true">!</span>
+    <div><small>Overdue open orders</small><strong>{{ overdue_count }}</strong><span>Past expected delivery date</span></div>
+  </article>
+  <article class="supply-metric">
+    <span class="supply-metric-icon" aria-hidden="true">▦</span>
+    <div><small>Materials monitored</small><strong>{{ rows|length }}</strong><span>Active inventory items</span></div>
+  </article>
+  <article class="supply-metric">
+    <span class="supply-metric-icon" aria-hidden="true">◎</span>
+    <div><small>Active suppliers</small><strong>{{ supplier_rows|length }}</strong><span>Available for purchasing</span></div>
+  </article>
+  <article class="supply-metric">
+    <span class="supply-metric-icon" aria-hidden="true">⌁</span>
+    <div><small>Upcoming deliveries</small><strong>{{ documents|length }}</strong><span>Purchase records shown below</span></div>
+  </article>
+</section>
+
+<section class="ops-panel supply-panel">
+  <div class="ops-panel-head supply-section-head">
+    <div><p class="supply-section-kicker">INVENTORY HEALTH</p><h2>Material demand &amp; stock cover</h2><p>Spot materials that are low on stock or may need replenishment based on recent usage.</p></div>
+    <span class="supply-updated">30-day usage window</span>
+  </div>
+  <div class="table-scroll supply-table-scroll">
+    <table class="ops-table supply-table">
+      <thead><tr><th>Material</th><th>On hand</th><th>Used · 30 days</th><th>Days of cover</th><th>Overdue orders</th><th>Action</th></tr></thead>
+      <tbody>
+      {% for row in rows %}
+        <tr>
+          <td><div class="supply-material"><span class="supply-material-mark" aria-hidden="true">M</span><div><strong>{{ row.item.name }}</strong><small>{{ row.item.sku }} · {{ row.item.factory.name }}</small></div></div></td>
+          <td><strong>{{ row.balance|floatformat:3 }}</strong><small>{{ row.item.unit_of_measure }}{% if row.low %} · minimum stock reached{% endif %}</small></td>
+          <td>{{ row.used_30d|floatformat:3 }} <small>{{ row.item.unit_of_measure }}</small></td>
+          <td>{% if row.days_cover != None %}<span class="supply-cover {% if row.days_cover < 14 %}supply-cover-low{% endif %}">{{ row.days_cover }} days</span>{% else %}<span class="supply-muted">No recent usage</span>{% endif %}</td>
+          <td>{% if row.overdue %}<span class="supply-status supply-status-alert">{{ row.overdue }} overdue</span>{% else %}<span class="supply-status supply-status-good">On track</span>{% endif %}</td>
+          <td>{% if row.low or row.days_cover != None and row.days_cover < 14 %}{% if can_manage %}<a class="supply-text-link" href="{% url 'operations:inventory_form' 'procurement' %}">Review replenishment <span aria-hidden="true">→</span></a>{% else %}<span class="supply-muted">Replenishment needed</span>{% endif %}{% else %}<span class="supply-muted">—</span>{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6"><div class="supply-empty"><strong>No active materials to monitor</strong><span>Add inventory items and record stock movements to see coverage insights.</span>{% if can_manage %}<a href="{% url 'operations:inventory_form' 'item' %}">Add an inventory item →</a>{% endif %}</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="supply-lower-grid">
+  <section class="ops-panel supply-panel">
+    <div class="ops-panel-head supply-section-head">
+      <div><p class="supply-section-kicker">PARTNER PERFORMANCE</p><h2>Supplier delivery watch</h2><p>Open orders that have passed their expected date need follow-up.</p></div>
+      {% if can_manage %}<a class="supply-header-link" href="{% url 'operations:inventory_form' 'supplier' %}">Manage suppliers <span aria-hidden="true">→</span></a>{% endif %}
+    </div>
+    <div class="table-scroll supply-table-scroll">
+      <table class="ops-table supply-table">
+        <thead><tr><th>Supplier</th><th>Purchase orders</th><th>Overdue</th><th>On-time</th><th>Score / 5</th></tr></thead>
+        <tbody>
+        {% for row in supplier_rows %}
+          <tr>
+            <td><div class="supply-material"><span class="supply-supplier-mark" aria-hidden="true">{{ row.supplier.name|first|upper }}</span><div><strong>{{ row.supplier.name }}</strong><small>{{ row.supplier.factory.name }}</small></div></div></td>
+            <td>{{ row.orders }}</td>
+            <td>{% if row.open_overdue %}<strong class="supply-overdue-number">{{ row.open_overdue }}</strong>{% else %}0{% endif %}</td>
+            <td>{% if row.on_time_pct != None %}{{ row.on_time_pct }}%{% else %}<span class="supply-muted">No completed deliveries</span>{% endif %}</td>
+            <td>{% if row.evaluation_score != None %}{{ row.evaluation_score|floatformat:1 }}{% else %}<span class="supply-muted">Not rated</span>{% endif %}{% if row.open_overdue %}<br><span class="supply-status supply-status-alert">Follow up</span>{% endif %}</td>
+          </tr>
+        {% empty %}
+      <tr><td colspan="5"><div class="supply-empty"><strong>No active suppliers registered</strong><span>Add suppliers to manage factory purchasing.</span>{% if can_manage %}<a href="{% url 'operations:inventory_form' 'supplier' %}">Add a supplier →</a>{% endif %}</div></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+{% if can_manage %}<section class="ops-panel supply-panel"><div class="ops-panel-head supply-section-head"><div><p class="supply-section-kicker">SUPPLIER EVALUATION</p><h2>Record supplier performance</h2><p>Rate quality, delivery, and communication from 1 to 5.</p></div></div><form method="post" class="ops-inline-form">{% csrf_token %}{% for field in evaluation_form %}<label>{{ field.label }}{{ field }}{% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</label>{% endfor %}<button class="ops-btn" type="submit">Save evaluation</button></form></section>{% endif %}
+
+  <section class="ops-panel supply-panel">
+    <div class="ops-panel-head supply-section-head">
+      <div><p class="supply-section-kicker">PURCHASE PIPELINE</p><h2>Expected deliveries</h2><p>Track supplier orders and their expected arrival dates.</p></div>
+      <a class="supply-header-link" href="{% url 'operations:inventory' %}">All procurement <span aria-hidden="true">→</span></a>
+    </div>
+    <div class="supply-delivery-list">
+      {% for doc in documents %}
+        <article class="supply-delivery">
+          <span class="supply-delivery-icon" aria-hidden="true">↘</span>
+          <div class="supply-delivery-main">
+            <div class="supply-delivery-title"><strong>{{ doc.number }}</strong><span class="supply-status {% if doc.status == 'received' %}supply-status-good{% elif doc.status == 'cancelled' %}supply-status-neutral{% else %}supply-status-info{% endif %}">{{ doc.get_status_display }}</span></div>
+            <p>{{ doc.item.name }} <span>·</span> {{ doc.supplier|default:"Supplier unassigned" }}</p>
+            <small>{{ doc.quantity|floatformat:3 }} {{ doc.item.unit_of_measure }} · {{ doc.warehouse.name }}</small>
+            {% if doc.tracking_number %}<small>Shipment: {{ doc.carrier|default:"Carrier not set" }} · {{ doc.tracking_number }}</small>{% endif %}
+          </div>
+          <div class="supply-delivery-date"><small>EXPECTED</small><strong>{{ doc.expected_date|date:"M j, Y"|default:"Not set" }}</strong></div>
+          {% if can_manage and doc.kind == 'order' %}<a class="supply-text-link" href="{% url 'operations:shipment_update' doc.pk %}">{% if doc.tracking_number %}Update tracking{% else %}Add tracking{% endif %}</a>{% endif %}
+        </article>
+      {% empty %}
+        <div class="supply-empty"><strong>No purchase orders to display</strong><span>New and existing procurement records will appear here.</span>{% if can_manage %}<a href="{% url 'operations:inventory_form' 'procurement' %}">Create a purchase request →</a>{% endif %}</div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<style>
+  .supply-hero{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr);gap:22px;align-items:stretch;margin-bottom:18px;padding:clamp(22px,3vw,34px);border:1px solid var(--line);border-radius:18px;background:radial-gradient(ellipse at 4% 0%,color-mix(in srgb,var(--accent) 12%,transparent),transparent 44%),var(--surface);box-shadow:0 12px 34px rgba(13,31,56,.06)}
+  .supply-hero-copy{display:flex;flex-direction:column;align-items:flex-start;justify-content:center}.supply-eyebrow,.supply-section-kicker{margin:0 0 8px;color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.14em}.supply-hero h1{margin:0;color:var(--text);font-size:clamp(27px,3.3vw,39px);line-height:1.12;letter-spacing:-.035em}.supply-hero-copy>p:not(.supply-eyebrow){max-width:680px;margin:12px 0 18px;color:var(--muted);font-size:13px;line-height:1.65}.supply-hero-actions{display:flex;flex-wrap:wrap;gap:9px}.supply-primary-action{display:inline-flex;align-items:center;gap:12px}.supply-insight{display:flex;gap:13px;align-items:flex-start;padding:18px;border:1px solid color-mix(in srgb,var(--accent) 20%,var(--line));border-radius:13px;background:color-mix(in srgb,var(--accent) 5%,var(--surface))}.supply-insight-icon{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:10px;background:color-mix(in srgb,var(--accent) 12%,var(--surface));color:var(--accent);font-size:18px;font-weight:800}.supply-insight strong{display:block;color:var(--text);font-size:13px}.supply-insight p{margin:6px 0 11px;color:var(--muted);font-size:11px;line-height:1.6}.supply-insight small{color:var(--accent);font-size:10px;font-weight:700}
+  .supply-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}.supply-metric{display:flex;align-items:center;gap:13px;min-width:0;padding:16px;border:1px solid var(--line);border-radius:13px;background:var(--surface)}.supply-metric-icon{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;border-radius:11px;background:color-mix(in srgb,var(--accent) 10%,var(--surface));color:var(--accent);font-size:17px;font-weight:800}.supply-metric-alert .supply-metric-icon{background:color-mix(in srgb,var(--warning) 13%,var(--surface));color:var(--warning)}.supply-metric small,.supply-metric span:not(.supply-metric-icon){display:block}.supply-metric small{color:var(--muted);font-size:10px;font-weight:650}.supply-metric strong{display:block;margin:3px 0;color:var(--text);font-size:23px;line-height:1.1}.supply-metric-alert strong{color:var(--warning)}.supply-metric div>span{color:var(--muted);font-size:10px}
+  .supply-panel{min-width:0;margin-bottom:16px;overflow:hidden}.supply-section-head{align-items:flex-start;gap:15px}.supply-section-head h2{margin:0;color:var(--text);font-size:17px;letter-spacing:-.015em}.supply-section-head p:not(.supply-section-kicker){margin:5px 0 0;color:var(--muted);font-size:11px;line-height:1.5}.supply-section-kicker{margin-bottom:5px;font-size:9px}.supply-updated{flex:none;padding:6px 9px;border:1px solid var(--line);border-radius:20px;color:var(--muted);font-size:10px;font-weight:650}.supply-table-scroll{overflow:auto}.supply-table{width:100%;min-width:760px;border-collapse:separate;border-spacing:0}.supply-table thead th{padding:11px 13px;background:var(--surface-2);color:var(--muted);font-size:9px;font-weight:750;letter-spacing:.07em;text-align:left;text-transform:uppercase;white-space:nowrap}.supply-table tbody td{padding:13px;border-bottom:1px solid var(--line);color:var(--text);font-size:11px;vertical-align:middle}.supply-table tbody tr:last-child td{border-bottom:0}.supply-table tbody tr:hover{background:color-mix(in srgb,var(--accent) 3%,var(--surface))}.supply-table td small{display:block;margin-top:3px;color:var(--muted);font-size:9px}.supply-material{display:flex;align-items:center;gap:10px;min-width:180px}.supply-material>div{min-width:0}.supply-material strong{display:block;color:var(--text);font-size:11px}.supply-material-mark,.supply-supplier-mark{display:grid;place-items:center;flex:none;width:32px;height:32px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);color:var(--accent);font-size:10px;font-weight:800}.supply-supplier-mark{border-radius:50%;background:color-mix(in srgb,var(--accent) 9%,var(--surface))}.supply-cover{display:inline-flex;padding:5px 8px;border-radius:20px;background:color-mix(in srgb,var(--success) 10%,var(--surface));color:var(--success);font-size:10px;font-weight:750;white-space:nowrap}.supply-cover-low{background:color-mix(in srgb,var(--warning) 13%,var(--surface));color:var(--warning)}.supply-status{display:inline-flex;align-items:center;padding:5px 8px;border-radius:20px;font-size:9px;font-weight:750;white-space:nowrap}.supply-status-alert{background:color-mix(in srgb,var(--warning) 13%,var(--surface));color:var(--warning)}.supply-status-good{background:color-mix(in srgb,var(--success) 10%,var(--surface));color:var(--success)}.supply-status-neutral{background:var(--surface-2);color:var(--muted)}.supply-status-info{background:color-mix(in srgb,var(--accent) 10%,var(--surface));color:var(--accent)}.supply-overdue-number{color:var(--warning)}.supply-muted{color:var(--muted);font-size:10px}.supply-text-link,.supply-header-link{color:var(--accent);font-size:10px;font-weight:750;text-decoration:none;white-space:nowrap}.supply-text-link:hover,.supply-header-link:hover{text-decoration:underline}.supply-header-link{flex:none;margin-top:5px}.supply-lower-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}.supply-lower-grid .supply-panel{margin-bottom:0}.supply-delivery-list{padding:0 16px}.supply-delivery{display:flex;align-items:center;gap:11px;padding:14px 0;border-bottom:1px solid var(--line)}.supply-delivery:last-child{border-bottom:0}.supply-delivery-icon{display:grid;place-items:center;flex:none;width:31px;height:31px;border-radius:9px;background:color-mix(in srgb,var(--accent) 9%,var(--surface));color:var(--accent);font-weight:800}.supply-delivery-main{flex:1;min-width:0}.supply-delivery-title{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.supply-delivery-title strong{color:var(--text);font-size:10px}.supply-delivery-main p{margin:5px 0 2px;color:var(--text);font-size:10px}.supply-delivery-main p span{color:var(--muted)}.supply-delivery-main>small{color:var(--muted);font-size:9px}.supply-delivery-date{flex:none;text-align:right}.supply-delivery-date small,.supply-delivery-date strong{display:block}.supply-delivery-date small{color:var(--muted);font-size:8px;font-weight:750;letter-spacing:.08em}.supply-delivery-date strong{margin-top:4px;color:var(--text);font-size:9px}.supply-empty{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:22px 14px;color:var(--muted);font-size:10px}.supply-empty strong{color:var(--text);font-size:12px}.supply-empty a{margin-top:4px;color:var(--accent);font-size:10px;font-weight:750;text-decoration:none}
+  @media(max-width:1050px){.supply-hero{grid-template-columns:1fr}.supply-insight{max-width:none}.supply-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.supply-lower-grid{grid-template-columns:1fr}}
+  @media(max-width:600px){.supply-hero{padding:20px;border-radius:14px}.supply-hero-actions{width:100%}.supply-hero-actions .ops-btn{flex:1;justify-content:center}.supply-metrics{gap:8px}.supply-metric{align-items:flex-start;gap:9px;padding:12px}.supply-metric-icon{width:31px;height:31px;flex-basis:31px}.supply-metric strong{font-size:20px}.supply-metric div>span{font-size:9px}.supply-section-head{flex-direction:column}.supply-updated{align-self:flex-start}.supply-delivery{align-items:flex-start;flex-wrap:wrap}.supply-delivery-date{margin-left:42px;text-align:left}}
+</style>
+{% endblock %}

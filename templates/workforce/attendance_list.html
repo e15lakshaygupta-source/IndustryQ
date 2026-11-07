@@ -1,0 +1,23 @@
+{% extends "workforce/base.html" %}
+{% block content %}
+<section class="panel">
+  <h1>Daily attendance</h1>
+  <form method="get" aria-label="Select attendance date">
+    <label for="attendance-date">Attendance date<input id="attendance-date" type="date" name="date" value="{{ date }}"></label>
+    <button class="button" type="submit">View day</button>
+  </form>
+  {% if can_manage %}<div class="workforce-actions"><a class="button" href="{% url 'workforce:attendance_create' %}">Record attendance</a></div>{% endif %}
+  <div class="workforce-table-wrap">
+    <table>
+      <thead><tr><th>Employee</th><th>Factory / Department</th><th>Status</th><th>Shift</th><th>Check in</th><th>Check out</th><th>Remarks</th></tr></thead>
+      <tbody>
+      {% for row in records %}
+        <tr><td>{{ row.employee.employee_id }} &middot; {{ row.employee.first_name }} {{ row.employee.last_name }}</td><td>{{ row.employee.factory.name }} / {{ row.employee.department.name }}</td><td>{{ row.get_status_display }}</td><td>{{ row.shift|default:"&mdash;" }}</td><td>{{ row.check_in|default:"&mdash;" }}</td><td>{{ row.check_out|default:"&mdash;" }}</td><td>{{ row.remarks|default:"&mdash;" }}</td></tr>
+      {% empty %}
+        <tr><td colspan="7">No attendance records for this date.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "workforce/base.html" %}
+{% block content %}
+<section class="panel">
+  <p class="workforce-eyebrow">EMPLOYEE SELF SERVICE</p>
+  <h1>Welcome, {{ employee.first_name }}</h1>
+  <p class="workforce-profile-meta">{{ employee.employee_id }} &middot; {{ employee.designation }} &middot; {{ employee.department.name }} &middot; {{ employee.factory.name }}</p>
+</section>
+<div class="workforce-portal-grid">
+  <section class="panel">
+    <h2>Today</h2>
+    {% if attendance_today %}
+      <p class="workforce-attendance-state">{{ attendance_today.get_status_display }}</p>
+      <dl class="workforce-inline-details"><div><dt>Check in</dt><dd>{{ attendance_today.check_in|default:"Not recorded" }}</dd></div><div><dt>Check out</dt><dd>{{ attendance_today.check_out|default:"Not recorded" }}</dd></div></dl>
+    {% else %}<p>No attendance punches yet.</p>{% endif %}
+    <form method="post" action="{% url 'workforce:attendance_punch' %}" class="workforce-punch-form">
+      {% csrf_token %}
+      <button class="button" name="action" value="check_in" {% if attendance_today.check_in %}disabled{% endif %}>Check in</button>
+      <button class="button secondary" name="action" value="check_out" {% if not attendance_today.check_in or attendance_today.check_out %}disabled{% endif %}>Check out</button>
+    </form>
+  </section>
+  <section class="panel">
+    <h2>My shift</h2>
+    {% for assignment in assignments %}
+      <article class="workforce-shift-card"><strong>{{ assignment.shift.name }}</strong><span>{{ assignment.shift.start_time }} &ndash; {{ assignment.shift.end_time }}</span></article>
+    {% empty %}<p>No current shift assignment.</p>{% endfor %}
+  </section>
+  <section class="panel">
+    <header class="workforce-panel-heading"><h2>My leave requests</h2><a href="{% url 'workforce:employee_detail' employee.pk %}">Apply / view profile &rarr;</a></header>
+    <div class="workforce-record-list">
+      {% for leave in leaves %}<article><div><strong>{{ leave.get_leave_type_display }}</strong><span>{{ leave.start_date }} to {{ leave.end_date }} &middot; <span class="workforce-status {{ leave.status }}">{{ leave.get_status_display }}</span></span></div>{% if leave.reason %}<p>{{ leave.reason }}</p>{% endif %}</article>
+      {% empty %}<p>No leave requests.</p>{% endfor %}
+    </div>
+  </section>
+  <section class="panel">
+    <h2>Performance</h2>
+    <div class="workforce-record-list">
+      {% for record in performance %}<article><div><strong>{{ record.period_start }} &ndash; {{ record.period_end }}</strong><span>Score {{ record.score }}/100</span></div>{% if record.notes %}<p>{{ record.notes }}</p>{% endif %}</article>
+      {% empty %}<p>No performance feedback recorded.</p>{% endfor %}
+    </div>
+  </section>
+  <section class="panel">
+    <h2>My training</h2>
+    <div class="workforce-record-list">{% for enrollment in training_enrollments %}<article><div><strong>{{ enrollment.course.title }}</strong><span><span class="workforce-status {{ enrollment.status }}">{{ enrollment.get_status_display }}</span></span></div>{% if enrollment.status != 'complete' %}<form method="post" action="{% url 'workforce:training_complete' enrollment.pk %}">{% csrf_token %}<button class="button secondary" type="submit">Mark complete</button></form>{% endif %}</article>{% empty %}<p>No training assigned.</p>{% endfor %}</div>
+  </section>
+  <section class="panel">
+    <h2>My payslips</h2>
+    <div class="workforce-record-list">{% for record in payroll_records %}<article><div><strong>{{ record.period_start }} &ndash; {{ record.period_end }}</strong><span>Net pay {{ record.net_pay }} &middot; {{ record.get_status_display }}</span></div></article>{% empty %}<p>No payslips available.</p>{% endfor %}</div>
+  </section>
+</div>
+{% endblock %}

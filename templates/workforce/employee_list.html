@@ -1,0 +1,42 @@
+{% extends "workforce/base.html" %}
+{% block content %}
+<section class="panel">
+  <h1>Employee directory</h1>
+  <form method="get" aria-label="Filter employees">
+    <label for="employee-search">Search employees
+      <input id="employee-search" name="q" value="{{ query }}" placeholder="Name, ID, email, or title">
+    </label>
+    <label for="employee-status">Employment status
+      <select id="employee-status" name="status">
+        <option value="">All statuses</option>
+        <option value="active" {% if status == "active" %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if status == "inactive" %}selected{% endif %}>Inactive</option>
+        <option value="on_leave" {% if status == "on_leave" %}selected{% endif %}>On leave</option>
+        <option value="resigned" {% if status == "resigned" %}selected{% endif %}>Resigned</option>
+      </select>
+    </label>
+    <button class="button" type="submit">Apply filters</button>
+    {% if query or status %}<a class="button secondary" href="{% url 'workforce:employee_list' %}">Clear</a>{% endif %}
+  </form>
+  {% if can_manage %}<div class="workforce-actions"><a class="button" href="{% url 'workforce:employee_create' %}">Register employee</a></div>{% endif %}
+  <div class="workforce-table-wrap">
+    <table>
+      <thead><tr><th>Employee ID</th><th>Name</th><th>Factory</th><th>Department</th><th>Designation</th><th>Status</th><th>Profile</th></tr></thead>
+      <tbody>
+      {% for employee in page_obj %}
+        <tr><td>{{ employee.employee_id }}</td><td>{{ employee.first_name }} {{ employee.last_name }}</td><td>{{ employee.factory.name }}</td><td>{{ employee.department.name }}</td><td>{{ employee.designation }}</td><td>{{ employee.get_employment_status_display }}</td><td><a href="{% url 'workforce:employee_detail' employee.pk %}">View profile</a>{% if can_manage %}<br><a href="{% url 'workforce:performance_create' employee.pk %}">Add appraisal</a>{% endif %}</td></tr>
+      {% empty %}
+        <tr><td colspan="7">No employees found.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <nav class="workforce-pagination" aria-label="Employee pages">
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    <span>
+      {% if page_obj.has_previous %}<a href="?q={{ query|urlencode }}&amp;status={{ status|urlencode }}&amp;page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+      {% if page_obj.has_next %}<a href="?q={{ query|urlencode }}&amp;status={{ status|urlencode }}&amp;page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+    </span>
+  </nav>
+</section>
+{% endblock %}

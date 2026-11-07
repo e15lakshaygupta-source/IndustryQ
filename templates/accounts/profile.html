@@ -1,0 +1,83 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My profile | INDUSTRIQ</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261106">
+</head>
+<body>
+{% include "partials/app_sidebar.html" %}
+<main class="app-content">
+  <div class="profile-page">
+    <header class="profile-heading">
+      <div>
+        <p class="profile-eyebrow">ACCOUNT SETTINGS</p>
+        <h1>My profile</h1>
+        <p>Manage your personal details, workplace contact information, and emergency contact.</p>
+      </div>
+      <aside class="profile-progress" aria-label="Profile completion {{ profile_completion }} percent">
+        <strong>{{ profile_completion }}%</strong>
+        <span>profile complete</span>
+        <div class="progress-track"><i style="width:{{ profile_completion }}%"></i></div>
+      </aside>
+    </header>
+
+    {% for message in messages %}<div class="profile-message {{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
+
+    <form method="post" class="profile-form">
+      {% csrf_token %}
+      {% for error in form.non_field_errors %}<div class="profile-error" role="alert">{{ error }}</div>{% endfor %}
+
+      <section class="profile-section">
+        <div class="profile-section-title"><span class="profile-section-icon">01</span><div><h2>Personal information</h2><p>Account details and preferred contact information. Member since {{ request.user.date_joined|date:"M d, Y" }}.</p></div></div>
+        <div class="profile-fields">
+          <div class="profile-field"><label for="profile-username">Username</label><input id="profile-username" value="{{ request.user.username }}" disabled></div>
+          <div class="profile-field"><label for="profile-role">Access role</label><input id="profile-role" value="{{ profile.get_role_display }}" disabled></div>
+          {% for field in form %}{% if field.name == 'first_name' or field.name == 'last_name' or field.name == 'email' or field.name == 'date_of_birth' or field.name == 'phone' or field.name == 'job_title' %}
+          <div class="profile-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<small class="profile-error">{{ error }}</small>{% endfor %}</div>
+          {% endif %}{% endfor %}
+        </div>
+      </section>
+
+      <section class="profile-section">
+        <div class="profile-section-title"><span class="profile-section-icon">02</span><div><h2>Organization assignment</h2><p>Company, factory, and department assignments are managed through your administrator.</p></div></div>
+        <div class="profile-fields">
+          {% for field in form %}{% if field.name == 'company' or field.name == 'factory' or field.name == 'department' %}
+          <div class="profile-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<small class="profile-error">{{ error }}</small>{% endfor %}</div>
+          {% endif %}{% endfor %}
+        </div>
+      </section>
+
+      <section class="profile-section">
+        <div class="profile-section-title"><span class="profile-section-icon">03</span><div><h2>Contact and emergency information</h2><p>Keep your address and emergency contact details up to date.</p></div></div>
+        <div class="profile-fields">
+          {% for field in form %}{% if field.name == 'address' or field.name == 'emergency_contact_name' or field.name == 'emergency_contact_phone' or field.name == 'bio' %}
+          <div class="profile-field {% if field.name == 'address' or field.name == 'bio' %}wide{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<small class="profile-error">{{ error }}</small>{% endfor %}</div>
+          {% endif %}{% endfor %}
+        </div>
+      </section>
+      <footer class="profile-actions"><button class="profile-save" type="submit">Save profile changes</button></footer>
+    </form>
+    <section class="profile-section profile-security" id="security">
+      <div class="profile-section-title"><span class="profile-section-icon">04</span><div><h2>Password &amp; security</h2><p>Change your account password here without leaving your profile.</p></div></div>
+      <form method="post" class="password-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="change_password">
+        {% for error in password_form.non_field_errors %}<div class="profile-error" role="alert">{{ error }}</div>{% endfor %}
+        <div class="password-fields">
+          {% for field in password_form %}
+          <div class="profile-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small class="password-help">{{ field.help_text|safe }}</small>{% endif %}{% for error in field.errors %}<small class="profile-error">{{ error }}</small>{% endfor %}</div>
+          {% endfor %}
+        </div>
+        <footer class="profile-actions"><button class="profile-save" type="submit">Update password</button></footer>
+      </form>
+    </section>
+  </div>
+</main>
+<style>
+.profile-page{max-width:1120px;margin:0 auto}.profile-heading{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:10px 0 24px}.profile-heading h1{margin:6px 0;font-size:clamp(28px,3vw,38px);letter-spacing:-.04em}.profile-heading>div>p:last-child{margin:0;max-width:580px;line-height:1.6}.profile-eyebrow{margin:0;color:var(--accent)!important;font-size:10px;font-weight:750;letter-spacing:.16em}.profile-progress{min-width:190px;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}.profile-progress strong{display:block;font-size:26px}.profile-progress span{font-size:12px;color:var(--muted)}.progress-track{height:6px;margin-top:12px;overflow:hidden;border-radius:10px;background:var(--surface-2)}.progress-track i{display:block;height:100%;background:var(--accent);border-radius:inherit}.profile-form{max-width:980px}.profile-section{margin:15px 0;padding:22px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);scroll-margin-top:24px}.profile-section-title{display:flex;align-items:flex-start;gap:13px;margin-bottom:12px}.profile-section-title h2{margin:1px 0 5px;font-size:17px}.profile-section-title p{margin:0;font-size:12px;line-height:1.55;color:var(--muted)}.profile-section-icon{display:grid;place-items:center;flex:0 0 36px;height:36px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--accent);font-size:11px;font-weight:750}.profile-section-title>div{flex:1}.profile-fields,.password-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 18px}.profile-field{min-width:0}.profile-field.wide{grid-column:1/-1}.profile-field label{display:block;margin:12px 0 6px;color:var(--muted);font-size:11px;font-weight:650}.profile-field input,.profile-field select,.profile-field textarea{width:100%;min-height:42px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);color:var(--text);box-sizing:border-box}.profile-field textarea{resize:vertical}.profile-field input:disabled,.profile-field select:disabled{opacity:.72;cursor:not-allowed}.profile-error{display:block;margin-top:5px;color:var(--danger);font-size:11px}.profile-message{max-width:980px;margin:0 0 14px;padding:11px 14px;border:1px solid var(--line);border-radius:9px;background:var(--success-bg);color:var(--success)}.profile-message.error{background:var(--danger-bg);color:var(--danger)}.profile-message.success{background:var(--success-bg);color:var(--success)}.profile-actions{display:flex;align-items:center;gap:18px;padding:14px 0 4px}.profile-save{min-height:42px;padding:10px 17px!important}.profile-security{max-width:980px}.password-fields{max-width:760px}.password-help{display:block;margin-top:5px;color:var(--muted);font-size:10px;line-height:1.5}.password-help ul{margin:5px 0;padding-left:18px}.profile-page input:focus,.profile-page select:focus,.profile-page textarea:focus{outline:3px solid var(--focus-ring);outline-offset:1px;border-color:var(--accent)}@media(max-width:650px){.profile-heading{align-items:stretch;flex-direction:column}.profile-progress{min-width:0}.profile-fields,.password-fields{grid-template-columns:1fr}.profile-field.wide{grid-column:auto}.profile-section{padding:17px}.profile-actions{align-items:stretch;flex-direction:column;gap:13px}.profile-save{width:100%}}
+</style>
+</body>
+</html>

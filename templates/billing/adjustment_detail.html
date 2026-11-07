@@ -1,0 +1,21 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<section class="ops-panel">
+  <div class="ops-panel-head">
+    <div><h1>{{ note.get_kind_display }} {{ note.number }}</h1><p>{{ note.get_status_display }} · {{ note.factory.name }}</p></div>
+    <div><a class="ops-btn" href="{% url 'billing:adjustment_list' %}">Adjustment history</a> <a class="ops-btn" href="{% url 'billing:document_detail' note.source_document_id %}">Original document</a></div>
+  </div>
+  <p>Original document: <a href="{% url 'billing:document_detail' note.source_document_id %}">{{ note.source_document.number }}</a></p>
+  <p>Party: {% if note.source_document.customer %}{{ note.source_document.customer.name }}{% else %}{{ note.source_document.supplier.name }}{% endif %}</p>
+  <p>Adjustment date: {{ note.issue_date }} · Reason: {{ note.reason }}</p>
+  {% if note.approved_at %}<p>Approved by {{ note.approved_by|default:"Deleted user" }} at {{ note.approved_at }}.</p>{% endif %}
+  <div class="billing-table-wrap"><table class="billing-table">
+    <thead><tr><th>Original item</th><th>HSN/SAC</th><th>Return quantity</th><th>Taxable adjustment</th><th>Rate</th><th>CGST</th><th>SGST</th><th>IGST</th><th>Total adjustment</th></tr></thead>
+    <tbody>{% for line in note.lines.all %}<tr><td>{{ line.description }}</td><td>{{ line.hsn_sac_code|default:"—" }}</td><td>{{ line.quantity }}</td><td>{{ note.currency_code }} {{ line.taxable_value|floatformat:2 }}</td><td>{{ line.tax_rate }}%</td><td>{{ line.cgst_amount|floatformat:2 }}</td><td>{{ line.sgst_amount|floatformat:2 }}</td><td>{{ line.igst_amount|floatformat:2 }}</td><td>{{ note.currency_code }} {{ line.total|floatformat:2 }}</td></tr>{% empty %}<tr><td colspan="9">No return items.</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <p>Taxable {{ note.currency_code }} {{ note.taxable_value|floatformat:2 }} · CGST {{ note.cgst_amount|floatformat:2 }} · SGST {{ note.sgst_amount|floatformat:2 }} · IGST {{ note.igst_amount|floatformat:2 }} · Tax adjustment {{ note.tax_amount|floatformat:2 }} · <strong>Total adjustment {{ note.currency_code }} {{ note.total|floatformat:2 }}</strong></p>
+  {% if can_manage and note.status == 'draft' %}
+    <form method="post" action="{% url 'billing:adjustment_approve' note.pk %}">{% csrf_token %}<button class="ops-btn" type="submit">Approve adjustment</button></form>
+  {% endif %}
+</section>
+{% endblock %}

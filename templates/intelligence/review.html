@@ -1,0 +1,28 @@
+{% extends "intelligence/base.html" %}
+{% block content %}
+<section class="panel">
+  <h1>Review inspection: {{ inspection.product_reference }}</h1>
+  <p>{{ inspection.factory.name }}{% if inspection.department %} &middot; {{ inspection.department.name }}{% endif %} &middot; {{ inspection.created_at }}</p>
+  <img class="thumb" src="{{ inspection.image.url }}" alt="Inspection sample">
+  <p>Measured dimensions:
+    {% if inspection.length_mm and inspection.width_mm and inspection.height_mm %}{{ inspection.length_mm }} &times; {{ inspection.width_mm }} &times; {{ inspection.height_mm }} mm{% else %}Not recorded{% endif %}
+  </p>
+  <p class="notice">Photo check: brightness {{ inspection.image_brightness|default:"not available" }}, edge detail {{ inspection.image_edge_detail|default:"not available" }}. {% if inspection.image_quality_flag %}A retake may improve exposure or focus.{% else %}No photo-quality warning was detected.{% endif %} These checks assess the image only; classify the product below.</p>
+  <form method="post" class="intelligence-form">
+    {% csrf_token %}
+    <div class="intelligence-form-field">
+      <label for="inspection-status">Result</label>
+      <select id="inspection-status" name="status" required><option value="">Choose result</option><option value="pass">Pass</option><option value="fail">Fail</option></select>
+    </div>
+    <div class="intelligence-form-field">
+      <label for="defect-label">Defect label</label>
+      <input id="defect-label" name="defect_label" maxlength="150" value="{{ inspection.defect_label }}">
+    </div>
+    <div class="intelligence-form-field full">
+      <label for="review-notes">Review notes</label>
+      <textarea id="review-notes" name="notes" rows="3">{{ inspection.notes }}</textarea>
+    </div>
+    <div class="intelligence-form-actions"><button class="button" type="submit">Save review</button></div>
+  </form>
+</section>
+{% endblock %}

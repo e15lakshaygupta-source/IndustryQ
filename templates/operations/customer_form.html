@@ -1,0 +1,50 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<section class="ops-panel">
+  <div class="ops-panel-head">
+    <div><h1>Add customer</h1><p class="subtitle">Record the customer's actual legal, billing, and GST details before creating a tax invoice.</p></div>
+  </div>
+  <div class="billing-data-warning" role="note">
+    <strong>Use verified records only</strong>
+    <p>Enter the legal name and place-of-supply details from the customer's official records. GSTIN format checks do not confirm that a GST registration is active; verify it using the official GST portal. GSTIN is optional for an unregistered customer. Never use sample values for a live invoice.</p>
+  </div>
+  <form method="post" class="ops-form">
+    {% csrf_token %}
+    <div class="ops-form-field full">
+      <label for="company">Your company / billing entity</label>
+      <select id="company" name="company" required>
+        <option value="">Choose company</option>
+        {% for company in companies %}<option value="{{ company.pk }}" {% if request.POST.company == company.pk|stringformat:"s" %}selected{% endif %}>{{ company.name }}</option>{% endfor %}
+      </select>
+      <small class="ops-help-text">Choose the company that owns this customer account. This must match the company of the invoicing factory.</small>
+    </div>
+    {% for field in form %}
+    {% if field.name == "customer_details_confirmed" %}
+    <div class="ops-form-field full customer-data-confirmation">
+      <label>{{ field }} {{ field.label }}</label>
+      {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+    </div>
+    {% else %}
+    <div class="ops-form-field {% if field.name == 'address' or field.name == 'billing_address' or field.name == 'shipping_address' %}full{% endif %}">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}<small class="ops-help-text">{{ field.help_text }}</small>{% endif %}
+      {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% for error in form.non_field_errors %}<div class="ops-form-field full"><p class="error">{{ error }}</p></div>{% endfor %}
+    <div class="ops-form-actions">
+      <button class="ops-btn" type="submit">Save customer</button>
+      <a href="{% url 'operations:billing' %}">&larr; Cancel and return</a>
+    </div>
+  </form>
+</section>
+<style>
+  .billing-data-warning{margin:0 0 18px;padding:14px 16px;border:1px solid color-mix(in srgb,var(--warning) 35%,var(--line));border-left:4px solid var(--warning);border-radius:10px;background:color-mix(in srgb,var(--warning) 7%,var(--surface))}
+  .billing-data-warning strong{color:var(--text);font-size:12px}
+  .billing-data-warning p{margin:6px 0 0;color:var(--muted);font-size:11px;line-height:1.6}
+  .customer-data-confirmation label{display:flex;align-items:flex-start;gap:9px;color:var(--text);font-size:12px;line-height:1.5}
+  .customer-data-confirmation input{width:17px;height:17px;margin:1px 0 0;flex:0 0 auto;accent-color:var(--accent)}
+</style>
+{% endblock %}

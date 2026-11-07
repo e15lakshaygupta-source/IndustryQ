@@ -1,0 +1,58 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<section class="ops-panel">
+  <div class="ops-panel-head">
+    <div>
+      <h1>Production Unit Performance</h1>
+      <p class="subtitle">Line-level operational yield, batch throughput, and scrap rate analytics across facilities.</p>
+    </div>
+
+  </div>
+
+  <div class="table-scroll">
+    <table class="ops-table">
+      <thead>
+        <tr>
+          <th>Factory</th>
+          <th>Production Unit / Line</th>
+          <th>Total Batches</th>
+          <th>Total Actual</th>
+          <th>Scrap / Rejected</th>
+          <th>Good Output</th>
+          <th>Reject Rate</th>
+          <th>Line Health</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in summaries %}
+        <tr>
+          <td><strong>{{ row.factory__name }}</strong></td>
+          <td>
+            <strong>{{ row.production_unit__name }}</strong>
+            <small class="sku-pill">{{ row.production_unit__unit_code }}</small>
+          </td>
+          <td>{{ row.entries }} batches</td>
+          <td>{{ row.actual }} units</td>
+          <td><span style="color:var(--warning)">{{ row.rejected }}</span></td>
+          <td><strong style="color:var(--accent)">{{ row.good }}</strong></td>
+          <td><strong>{{ row.reject_rate }}%</strong></td>
+          <td>
+            <span class="badge-status {% if row.reject_rate < 4 %}active{% elif row.reject_rate < 8 %}draft{% else %}cancelled{% endif %}">
+              {% if row.reject_rate < 4 %}OPTIMAL{% elif row.reject_rate < 8 %}NOMINAL{% else %}HIGH SCRAP{% endif %}
+            </span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="empty-row">No unit-level production telemetry recorded yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:18px;padding:14px 18px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;font-size:12px;color:var(--muted);">
+    <strong style="color:var(--text)">Line Efficiency Metrics:</strong> Performance aggregates reflect all verified floor output records. Target deviations and scheduling variances are synchronized directly with active Work Orders and Production Plans.
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "intelligence/base.html" %}
+{% block content %}
+<h1>Safety incidents</h1>
+<p class="muted">Record and track workplace safety observations and incidents in your assigned workspace.</p>
+<section class="grid"><article class="metric">Open incidents<strong>{{ open_count }}</strong></article><article class="metric">Records shown<strong>{{ incidents|length }}</strong></article></section>
+<section class="panel">
+  <h2>Report an incident</h2>
+  <p class="muted">Employees can submit an incident for their assigned workplace; managers can also review and classify reports.</p>
+  <form method="post" class="intelligence-form">{% csrf_token %}
+    {% for field in form %}
+    <div class="intelligence-form-field {% if field.name == 'details' or field.name == 'summary' %}full{% endif %}">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+      {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+      {% for error in field.errors %}<small class="error">{{ error }}</small>{% endfor %}
+    </div>
+    {% endfor %}
+    {% for error in form.non_field_errors %}<p class="error">{{ error }}</p>{% endfor %}
+    <div class="intelligence-form-actions"><button class="button" type="submit">Save incident</button></div>
+  </form>
+</section>
+<section class="panel">
+  <h2>Incident register</h2>
+  <div class="intelligence-table-wrap"><table><thead><tr><th>Date</th><th>Factory</th><th>Department</th><th>Incident</th><th>Severity</th><th>Status</th><th>Reported by</th></tr></thead><tbody>
+  {% for row in incidents %}<tr><td>{{ row.incident_date }}</td><td>{{ row.factory.name }}</td><td>{{ row.department.name|default:"—" }}</td><td>{{ row.summary }}<small>{{ row.details }}</small></td><td>{{ row.get_severity_display }}</td><td>{{ row.get_status_display }}</td><td>{{ row.reported_by|default:"—" }}</td></tr>{% empty %}<tr><td colspan="7">No safety incidents recorded.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endblock %}

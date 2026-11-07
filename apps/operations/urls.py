@@ -1,0 +1,35 @@
+from django.urls import path
+from . import views
+
+app_name = "operations"
+urlpatterns = [
+    path("", views.home, name="home"),
+    path("digital-twin/", views.digital_twin, name="digital_twin"),
+    path("inventory/", views.inventory, name="inventory"),
+    path("materials/planning/", views.material_planning, name="material_planning"),
+    path("materials/plans/<int:plan_id>/requirements/<int:requirement_id>/order/", views.raw_material_purchase_order, name="raw_material_purchase_order"),
+    path("warehouse/", views.smart_warehouse, name="smart_warehouse"),
+    path("warehouse/manage/", views.warehouse_control, name="warehouse_control"),
+    path("supply-chain/", views.supply_chain, name="supply_chain"),
+    path("supply-chain/orders/<int:pk>/tracking/", views.shipment_update, name="shipment_update"),
+    path("billing/", views.billing_home, name="billing"),
+    path("billing/customer/add/", views.customer_create, name="customer_create"),
+    path("billing/document/add/", views.billing_create, name="billing_create"),
+    path("billing/document/<int:pk>/", views.billing_detail, name="billing_detail"),
+    path("inventory/add/<str:kind>/", views.inventory_form, name="inventory_form"),
+    path("catalogue/", views.catalogue, name="catalogue"),
+    path("catalogue/product/add/", views.catalog_form, {"kind": "product"}, name="product_create"),
+    path("catalogue/product/<int:pk>/edit/", views.catalog_form, {"kind": "product"}, name="product_edit"),
+    path("catalogue/category/add/", views.catalog_form, {"kind": "category"}, name="category_create"),
+    path("catalogue/category/<int:pk>/edit/", views.catalog_form, {"kind": "category"}, name="category_edit"),
+    path("plans/", views.plans, name="plans"),
+    path("plans/add/", views.plan_form, name="plan_create"),
+    path("plans/<int:pk>/edit/", views.plan_form, name="plan_edit"),
+    path("orders/", views.orders, name="orders"),
+    path("orders/add/", views.order_form, name="order_create"),
+    path("orders/<int:pk>/edit/", views.order_form, name="order_edit"),
+    path("orders/<int:pk>/status/", views.order_status, name="order_status"),
+    path("production/add/", views.entry_create, name="entry_create"),
+    path("production/history/", views.history, name="history"),
+    path("production/performance/", views.unit_performance, name="unit_performance"),
+]

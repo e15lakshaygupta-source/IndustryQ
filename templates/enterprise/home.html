@@ -1,0 +1,21 @@
+{% extends "enterprise/base.html" %}{% block title %}Additional enterprise modules{% endblock %}{% block heading %}Additional advanced modules{% endblock %}{% block subtitle %}Operational pages for documents, risk, projects, partners, mobile work, integration, continuity, and governance.{% endblock %}{% block content %}
+<section class="ent-panel"><div class="ent-grid">
+<a class="ent-card" href="{% url 'enterprise:documents' %}"><strong>26 · Document Management System</strong><span>Upload and version contracts, invoices, certificates, SOPs, and other files.</span></a>
+<a class="ent-card" href="{% url 'enterprise:compliance' %}"><strong>27 · Compliance &amp; Risk Management</strong><span>Track regulatory deadlines, safety audits, risks, owners, and evidence.</span></a>
+<a class="ent-card" href="{% url 'intelligence:sustainability' %}"><strong>28 · Energy &amp; Sustainability</strong><span>Record electricity, water, and waste; review consumption and trends.</span></a>
+<a class="ent-card" href="{% url 'enterprise:projects' %}"><strong>29 · Project Management</strong><span>Manage industrial projects, budgets, tasks, milestones, and progress.</span></a>
+<a class="ent-card" href="{% url 'enterprise:portal_admin' %}"><strong>30 · Customer &amp; Supplier Portals</strong><span>Link external accounts to scoped order, invoice, and bill tracking.</span></a>
+<a class="ent-card" href="{% url 'enterprise:mobile' %}"><strong>31 · Mobile Workforce Platform</strong><span>Install the mobile web app and open employee attendance, leave, and inspections.</span></a>
+<a class="ent-card" href="{% url 'organization:overview' %}"><strong>32 · Multi-Company Management</strong><span>Manage companies, facilities, departments, and production units under one account.</span></a>
+<a class="ent-card" href="{% url 'enterprise:integrations' %}"><strong>33 · API &amp; Integration Marketplace</strong><span>Create scoped API credentials for accounting, ERP, logistics, banking, and custom clients.</span></a>
+<a class="ent-card" href="{% url 'enterprise:recovery' %}"><strong>34 · Disaster Recovery &amp; Continuity</strong><span>Create backups and validate archive contents and checksums.</span></a>
+<a class="ent-card" href="{% url 'enterprise:security' %}"><strong>35 · Enterprise Security &amp; Governance</strong><span>Review role-based access, audit history, and account security settings.</span></a>
+</div></section>
+<section class="ent-panel"><h2>Enterprise workspace</h2><div class="ent-grid">
+{% if can_manage %}<a class="ent-card" href="{% url 'enterprise:recovery' %}"><strong>Backup &amp; recovery</strong><span>Create a backup archive and run integrity validation.</span></a>{% endif %}
+{% if can_manage_assets %}<a class="ent-card" href="{% url 'intelligence:machine_create' %}"><strong>Register an asset</strong><span>Add a factory machine and track its service lifecycle.</span></a>{% endif %}
+{% if can_manage_quality %}<a class="ent-card" href="{% url 'intelligence:inspection_create' %}"><strong>Submit quality inspection</strong><span>Capture an inspection and send it for review.</span></a>{% endif %}
+<a class="ent-card" href="{% url 'intelligence:sustainability' %}"><strong>Energy &amp; sustainability records</strong><span>Review consumption and add current readings.</span></a>
+<a class="ent-card" href="{% url 'organization:overview' %}"><strong>Organization workspace</strong><span>Open companies, facilities, departments, and units.</span></a>
+</div></section>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<section class="ops-panel">
+  <div class="ops-panel-head">
+    <div><h1>{{ doc.get_kind_display }} {{ doc.number }}</h1><p>{{ doc.factory.name }} · {{ doc.get_payment_status_display }}</p></div>
+    <div>
+      {% if doc.kind == 'sales_invoice' %}
+        <a class="ops-btn" href="{% url 'billing:invoice_pdf' doc.pk %}" target="_blank" rel="noopener">Print invoice</a>
+        <a class="ops-btn" href="{% url 'billing:invoice_pdf_download' doc.pk %}">Download PDF</a>
+      {% else %}
+        <a class="ops-btn" href="{% url 'billing:purchase_bill_pdf' doc.pk %}" target="_blank" rel="noopener">Print bill</a>
+        <a class="ops-btn" href="{% url 'billing:purchase_bill_pdf_download' doc.pk %}">Download bill PDF</a>
+        {% if doc.supplier_invoice_pdf %}<a class="ops-btn" href="{% url 'billing:purchase_bill_source_pdf' doc.pk %}">Download supplier invoice</a>{% endif %}
+      {% endif %}
+      <a class="ops-btn" href="{% url 'billing:home' %}">Back to billing</a>
+    </div>
+  </div>
+  <div class="metric-grid">
+    <article class="metric-card"><span>Issue date</span><strong>{{ doc.issue_date }}</strong></article>
+    <article class="metric-card"><span>Due date</span><strong>{{ doc.due_date|default:"—" }}</strong></article>
+    <article class="metric-card"><span>Total</span><strong>{{ doc.currency_code }} {{ doc.total }}</strong></article>
+    <article class="metric-card"><span>Amount paid</span><strong>{{ doc.currency_code }} {{ doc.amount_paid }}</strong></article>
+    <article class="metric-card"><span>Balance due</span><strong>{{ doc.currency_code }} {{ doc.balance_due }}</strong></article>
+  </div>
+  <p>{% if doc.customer %}Bill to: {{ doc.customer.name }}{% else %}Supplier: {{ doc.supplier.name|default:"—" }}{% endif %}</p>
+  {% if doc.kind == 'sales_invoice' %}
+    <p>Supplier GSTIN: {{ doc.supplier_gstin|default:doc.factory.gstin|default:"—" }} · Customer GSTIN: {{ doc.customer_gstin|default:doc.customer.tax_registration_number|default:"—" }} · Place of supply: {{ doc.place_of_supply_state_code|default:"—" }} ({{ doc.gst_supply_type|default:"unclassified" }})</p>
+  {% else %}
+    <p>Supplier invoice: {{ doc.supplier_invoice_number|default:"—" }} · Supplier GSTIN: {{ doc.supplier_gstin|default:doc.supplier.gstin|default:"—" }} · Supplier state: {{ doc.supplier.state|default:"—" }} ({{ doc.supplier.state_code|default:"—" }})</p>
+    <p>Buyer GSTIN: {{ doc.customer_gstin|default:doc.factory.gstin|default:"—" }} · Supply type: {{ doc.gst_supply_type|default:"unclassified" }}</p>
+  {% endif %}
+  {% if doc.payment_terms %}<p>Payment terms: {{ doc.payment_terms }}</p>{% endif %}
+  {% if doc.procurement_document %}<p>Purchase order: {{ doc.procurement_document.number }}</p>{% endif %}
+  <table>
+    <thead><tr><th>Description</th><th>HSN/SAC</th><th>Quantity</th><th>Unit price</th><th>Taxable</th><th>Rate</th><th>CGST</th><th>SGST</th><th>IGST</th><th>Line total</th></tr></thead>
+    <tbody>{% for line in doc.lines.all %}<tr><td>{{ line.description }}</td><td>{{ line.hsn_sac_code|default:"—" }}</td><td>{{ line.quantity }}</td><td>{{ doc.currency_code }} {{ line.unit_price }}</td><td>{{ doc.currency_code }} {{ line.taxable_value|floatformat:2 }}</td><td>{{ line.tax_rate }}%</td><td>{{ line.cgst_amount|floatformat:2 }}</td><td>{{ line.sgst_amount|floatformat:2 }}</td><td>{{ line.igst_amount|floatformat:2 }}</td><td>{{ doc.currency_code }} {{ line.gross_total|floatformat:2 }}</td></tr>{% endfor %}</tbody>
+  </table>
+  <p>Subtotal {{ doc.subtotal }} · Discount {{ doc.discount_amount }} · Taxable value {{ doc.taxable_value }} · CGST {{ doc.cgst_amount }} · SGST {{ doc.sgst_amount }} · IGST {{ doc.igst_amount }} · Total GST {{ doc.tax_amount }} · Total {{ doc.total }}</p>
+  {% if doc.notes %}<p>{{ doc.notes }}</p>{% endif %}
+  {% if doc.kind == 'supplier_bill' %}
+    {% if doc.approved_at %}<p>Verified by {{ doc.approved_by|default:"Deleted user" }} at {{ doc.approved_at }}.</p>{% endif %}
+    {% if can_manage and doc.status == 'draft' %}
+      <form method="post" action="{% url 'billing:purchase_bill_verify' doc.pk %}">{% csrf_token %}<button class="ops-btn" type="submit">Verify supplier bill</button></form>
+    {% endif %}
+    {% if doc.procurement_document %}
+      <h3>Linked purchase order {{ doc.procurement_document.number }}</h3>
+      <p>{{ doc.procurement_document.item.name }} · Ordered {{ doc.procurement_document.quantity }} {{ doc.procurement_document.item.unit_of_measure }} · {{ doc.procurement_document.get_status_display }}</p>
+      <table><thead><tr><th>Goods receipt</th><th>Quantity</th><th>Unit cost</th><th>Reference</th><th>Date</th></tr></thead><tbody>
+      {% for receipt in doc.procurement_document.receipts.all %}{% if receipt.kind == 'receipt' %}<tr><td>{{ receipt.item.name }}</td><td>{{ receipt.quantity }} {{ receipt.item.unit_of_measure }}</td><td>{{ receipt.unit_cost }}</td><td>{{ receipt.reference|default:"—" }}</td><td>{{ receipt.created_at|date:"Y-m-d" }}</td></tr>{% endif %}{% empty %}<tr><td colspan="5">No stock receipts recorded for this purchase order.</td></tr>{% endfor %}
+      </tbody></table>
+    {% endif %}
+  {% endif %}
+  {% if doc.kind == 'sales_invoice' %}
+    <p>
+      {% if doc.approved_at %}Approved by {{ doc.approved_by|default:"Deleted user" }} at {{ doc.approved_at }}.{% endif %}
+      {% if doc.issued_at %} Issued by {{ doc.issued_by|default:"Deleted user" }} at {{ doc.issued_at }}.{% endif %}
+    </p>
+    {% if doc.cancellation_reason %}<p><strong>Cancellation reason:</strong> {{ doc.cancellation_reason }}<br>Cancelled by {{ doc.canceled_by|default:"Deleted user" }} at {{ doc.canceled_at }}.</p>{% endif %}
+    {% if can_manage and doc.status == 'draft' %}
+      <form method="post" action="{% url 'billing:invoice_approve' doc.pk %}">{% csrf_token %}<button class="ops-btn" type="submit">Approve invoice</button></form>
+    {% endif %}
+    {% if can_manage and doc.status == 'approved' %}
+      <form method="post" action="{% url 'billing:invoice_issue' doc.pk %}" class="invoice-issue-confirmation">
+        {% csrf_token %}
+        <p><strong>Final review before issue</strong></p>
+        <p>Check the seller and customer legal details, addresses, GSTIN registration status, place of supply, HSN/SAC codes, tax rates, and calculated amounts against source records. Format validation is not a legal or GST registration-status verification.</p>
+        <label><input type="checkbox" name="confirm_legal_accuracy" required> I confirm I reviewed these invoice and tax details against the source records.</label>
+        <button class="ops-btn" type="submit">Issue invoice</button>
+      </form>
+    {% endif %}
+    {% if can_manage and doc.status == 'issued' and not has_approved_adjustments %}
+      <form method="post" action="{% url 'billing:invoice_cancel' doc.pk %}">
+        {% csrf_token %}
+        <label for="cancellation-reason">Cancellation reason</label>
+        <textarea id="cancellation-reason" name="reason" rows="2" maxlength="500" required></textarea>
+        <button class="ops-btn" type="submit">Cancel invoice</button>
+      </form>
+    {% endif %}
+    {% if can_manage %}
+      {% if doc.status == 'approved' or doc.status == 'draft' %}
+        <form method="post" action="{% url 'billing:invoice_cancel' doc.pk %}">
+          {% csrf_token %}
+          <label for="cancellation-reason">Cancellation reason</label>
+          <textarea id="cancellation-reason" name="reason" rows="2" maxlength="500" required></textarea>
+          <button class="ops-btn" type="submit">Cancel invoice</button>
+        </form>
+      {% endif %}
+    {% endif %}
+  {% endif %}
+  {% if doc.kind == 'sales_invoice' and doc.status == 'issued' or doc.kind == 'sales_invoice' and doc.status == 'part_paid' or doc.kind == 'sales_invoice' and doc.status == 'paid' or doc.kind == 'supplier_bill' and doc.status == 'approved' or doc.kind == 'supplier_bill' and doc.status == 'part_paid' or doc.kind == 'supplier_bill' and doc.status == 'paid' %}
+    {% if can_manage %}<p><a class="ops-btn" href="{% url 'billing:adjustment_create' doc.pk %}">{% if doc.kind == 'sales_invoice' %}Create sales return / credit note{% else %}Create purchase return / debit note{% endif %}</a></p>{% endif %}
+  {% endif %}
+  <h2>Credit and debit note history</h2>
+  <table>
+    <thead><tr><th>Note</th><th>Type</th><th>Date</th><th>Reason</th><th>Tax adjustment</th><th>Total</th><th>Status</th></tr></thead>
+    <tbody>{% for adjustment in doc.adjustments.all %}<tr><td><a href="{% url 'billing:adjustment_detail' adjustment.pk %}">{{ adjustment.number }}</a></td><td>{{ adjustment.get_kind_display }}</td><td>{{ adjustment.issue_date }}</td><td>{{ adjustment.reason }}</td><td>{{ adjustment.currency_code }} {{ adjustment.tax_amount|floatformat:2 }}</td><td>{{ adjustment.currency_code }} {{ adjustment.total|floatformat:2 }}</td><td>{{ adjustment.get_status_display }}</td></tr>{% empty %}<tr><td colspan="7">No adjustments have been recorded.</td></tr>{% endfor %}</tbody>
+  </table>
+</section>
+<section class="ops-panel">
+  {% if doc.kind == 'sales_invoice' %}
+  <h2>Payment history</h2>
+  <table>
+    <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Reference</th><th>Receipt</th><th>Recorded by</th></tr></thead>
+    <tbody>{% for payment in doc.payments.all %}<tr><td>{{ payment.payment_date }}</td><td>{{ doc.currency_code }} {{ payment.amount }}</td><td>{{ payment.get_method_display }}{% if payment.method_details %} · {{ payment.method_details }}{% endif %}</td><td>{{ payment.reference|default:"—" }}</td><td><a href="{% url 'billing:payment_receipt' payment.pk %}">{{ payment.receipt_number }}</a> · <a href="{% url 'billing:payment_receipt_download' payment.pk %}">Download</a></td><td>{{ payment.recorded_by|default:"—" }}</td></tr>{% empty %}<tr><td colspan="6">No payments recorded.</td></tr>{% endfor %}</tbody>
+  </table>
+  {% if can_manage and doc.balance_due > 0 and doc.status != 'void' and doc.status != 'draft' and doc.status != 'approved' %}
+    <h3>Record payment</h3>
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="action" value="record_payment">
+      {% for field in payment_form %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}{% endfor %}
+      <button class="ops-btn" type="submit">Save payment</button>
+    </form>
+  {% endif %}
+  {% if can_manage and doc.kind == 'sales_invoice' and doc.amount_paid > 0 and doc.status != 'void' and doc.status != 'draft' and doc.status != 'approved' %}
+    <h3>Record refund</h3>
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="action" value="record_refund">
+      {% for field in refund_form %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}{% endfor %}
+      <button class="ops-btn" type="submit">Save refund</button>
+    </form>
+  {% endif %}
+  <h3>Refund history</h3>
+  <table>
+    <thead><tr><th>Date</th><th>Payment</th><th>Amount</th><th>Method</th><th>Reason</th><th>Recorded by</th></tr></thead>
+    <tbody>{% for refund in refunds %}<tr><td>{{ refund.refund_date }}</td><td>{{ refund.payment.receipt_number }}</td><td>{{ doc.currency_code }} {{ refund.amount }}</td><td>{{ refund.get_method_display }}{% if refund.method_details %} · {{ refund.method_details }}{% endif %}</td><td>{{ refund.reason }}</td><td>{{ refund.recorded_by|default:"—" }}</td></tr>{% empty %}<tr><td colspan="6">No refunds recorded.</td></tr>{% endfor %}</tbody>
+  </table>
+  {% else %}
+  <h2>Supplier balance</h2>
+  <p>Outstanding {{ doc.currency_code }} {{ doc.balance_due }} · Due {{ doc.due_date|default:"—" }} · {{ doc.get_payment_status_display }}</p>
+  <h3>Payment history</h3>
+  <table>
+    <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Reference</th><th>Receipt</th><th>Recorded by</th></tr></thead>
+    <tbody>{% for payment in doc.payments.all %}<tr><td>{{ payment.payment_date }}</td><td>{{ doc.currency_code }} {{ payment.amount }}</td><td>{{ payment.get_method_display }}{% if payment.method_details %} · {{ payment.method_details }}{% endif %}</td><td>{{ payment.reference|default:"—" }}</td><td><a href="{% url 'billing:payment_receipt' payment.pk %}">{{ payment.receipt_number }}</a> · <a href="{% url 'billing:payment_receipt_download' payment.pk %}">Download</a></td><td>{{ payment.recorded_by|default:"—" }}</td></tr>{% empty %}<tr><td colspan="6">No payments recorded.</td></tr>{% endfor %}</tbody>
+  </table>
+  {% if can_manage and doc.balance_due > 0 and doc.status == 'approved' or can_manage and doc.balance_due > 0 and doc.status == 'part_paid' %}
+    <h3>Record supplier payment</h3>
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="action" value="record_payment">
+      {% for field in payment_form %}<label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}{% endfor %}
+      <button class="ops-btn" type="submit">Save supplier payment</button>
+    </form>
+  {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

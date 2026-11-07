@@ -1,0 +1,72 @@
+{% extends "reports/base.html" %}
+{% block content %}
+<section class="report-panel">
+  <div class="report-panel-head">
+    <div>
+      <h2>Report library</h2>
+      <p>Explore current operational data and export it for review.</p>
+    </div>
+  </div>
+  <div class="report-grid">
+    <article class="report-card"><span class="report-icon">KPI</span><h3>Advanced business intelligence</h3><p>Build a focused KPI dashboard, filter by factory and dates, and drill down by factory.</p><a href="{% url 'reports:advanced' %}">Open KPI builder &rarr;</a></article>
+    <article class="report-card">
+      <span class="report-icon">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>
+      </span>
+      <h3>Executive overview</h3>
+      <p>Company, workforce, production, quality, and energy KPIs.</p>
+      <a href="{% url 'reports:executive' %}">Open executive report &rarr;</a>
+    </article>
+    <article class="report-card">
+      <span class="report-icon">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      </span>
+      <h3>Workforce attendance</h3>
+      <p>Attendance summaries by employee, factory, and department.</p>
+      <a href="{% url 'reports:workforce' %}">Open workforce report &rarr;</a>
+    </article>
+    <article class="report-card">
+      <span class="report-icon">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M17 18h1"></path><path d="M12 18h1"></path><path d="M7 18h1"></path></svg>
+      </span>
+      <h3>Production</h3>
+      <p>Work-order targets, daily output, rejects, and good units.</p>
+      <a href="{% url 'reports:production' %}">Open production report &rarr;</a>
+    </article>
+    <article class="report-card">
+      <span class="report-icon">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+      </span>
+      <h3>Quality &amp; energy</h3>
+      <p>Inspection outcomes and meter readings within your scope.</p>
+      <a href="{% url 'reports:quality_energy' %}">Open quality &amp; energy &rarr;</a>
+    </article>
+    <article class="report-card">
+      <span class="report-icon">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+      </span>
+      <h3>Notifications</h3>
+      <p>Review pending leave applications and inspection alerts.</p>
+      <a href="{% url 'reports:notifications' %}">Open notifications &rarr;</a>
+    </article>
+    {% if can_view_billing %}
+    <article class="report-card">
+      <span class="report-icon">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M7 8h10M7 12h10M7 16h6"></path></svg>
+      </span>
+      <h3>Billing registers &amp; ledgers</h3>
+      <p>Sales, purchases, payments, GST, balances, overdue items, and credit/debit notes.</p>
+      <a href="{% url 'reports:billing' %}">Open billing reports &rarr;</a>
+    </article>
+    {% endif %}
+    <article class="report-card">
+      <span class="report-icon">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+      </span>
+      <h3>Inventory &amp; machines</h3>
+      <p>Report pages are ready when their source data modules are added.</p>
+      <a href="{% url 'reports:inventory' %}">Inventory status &rarr;</a> &middot; <a href="{% url 'reports:machines' %}">Machine status &rarr;</a>
+    </article>
+  </div>
+</section>
+{% endblock %}

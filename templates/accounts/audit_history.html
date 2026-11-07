@@ -1,0 +1,86 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Audit history | INDUSTRIQ</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261106">
+  <style>
+    .audit-page{max-width:1520px;margin:0 auto}
+    .audit-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin:8px 0 20px}
+    .audit-eyebrow{margin:0;color:var(--accent);font-size:10px;font-weight:800;letter-spacing:.15em}
+    .audit-heading h1{margin:7px 0;font-size:clamp(28px,3vw,38px);letter-spacing:-.04em}
+    .audit-heading p:last-child{margin:0;color:var(--muted);font-size:13px;line-height:1.55}
+    .audit-count{padding:14px 18px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
+    .audit-count strong{display:block;color:var(--accent);font-size:24px;font-variant-numeric:tabular-nums}
+    .audit-count span{color:var(--muted);font-size:10px}
+    .audit-panel{margin:16px 0;padding:clamp(16px,2vw,24px);border:1px solid var(--line);border-radius:15px;background:var(--surface);box-shadow:var(--shadow)}
+    .audit-filter{display:flex;align-items:end;gap:10px;flex-wrap:wrap;padding:14px;border:1px solid var(--line);border-radius:11px;background:var(--surface-2)}
+    .audit-filter label{display:grid;gap:6px;min-width:min(300px,100%);color:var(--muted);font-size:11px;font-weight:700}
+    .audit-filter input{width:100%;min-height:40px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--text);font:inherit;font-size:13px}
+    .audit-filter button,.audit-filter a{display:inline-flex;align-items:center;justify-content:center;min-height:39px;padding:8px 13px;border:1px solid var(--accent);border-radius:8px;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:700;text-decoration:none}
+    .audit-filter a{border-color:var(--line);background:var(--surface);color:var(--text)}
+    .audit-table-wrap{width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:11px;overscroll-behavior-x:contain}
+    .audit-table{width:100%;min-width:920px;border-collapse:separate;border-spacing:0}
+    .audit-table th,.audit-table td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+    .audit-table th{background:var(--surface-2);color:var(--muted);font-size:10px;letter-spacing:.07em;text-transform:uppercase}
+    .audit-table td{font-size:12px;line-height:1.5}
+    .audit-table tr:last-child td{border-bottom:0}
+    .audit-time{min-width:155px;white-space:nowrap;color:var(--muted);font-variant-numeric:tabular-nums}
+    .audit-user{min-width:140px;font-weight:650}
+    .audit-action{min-width:145px}
+    .audit-action span{display:inline-flex;padding:4px 8px;border:1px solid var(--line);border-radius:20px;background:var(--surface-2);color:var(--accent);font-size:10px;font-weight:700;overflow-wrap:anywhere}
+    .audit-details{min-width:280px;max-width:540px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--muted);font-family:inherit;font-size:11px}
+    .audit-ip{min-width:120px;color:var(--muted);font-family:ui-monospace,Consolas,monospace;font-size:11px}
+    .audit-empty{text-align:center!important;padding:35px!important;color:var(--muted)}
+    .audit-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;color:var(--muted);font-size:12px}
+    .audit-pagination>div{display:flex;gap:8px}
+    .audit-pagination a{padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);text-decoration:none}
+    @media(max-width:600px){.audit-heading{align-items:stretch;flex-direction:column}.audit-count{align-self:flex-start}.audit-filter{align-items:stretch;flex-direction:column}.audit-filter label{min-width:0}.audit-pagination{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+{% include "partials/app_sidebar.html" %}
+<main class="app-content">
+  <div class="audit-page">
+    <header class="audit-heading">
+      <div><p class="audit-eyebrow">SECURITY / ACCOUNTABILITY</p><h1>Activity &amp; audit history</h1><p>Review recent account actions and narrow the log by username.</p></div>
+      <div class="audit-count"><strong>{{ event_count }}</strong><span>matching audit events</span></div>
+    </header>
+    <section class="audit-panel">
+      <form method="get" class="audit-filter">
+        <label for="user">Filter by user<input id="user" name="user" value="{{ username }}" placeholder="Enter username"></label>
+        <button type="submit">Apply filter</button>
+        {% if username %}<a href="{% url 'audit_history' %}">Clear</a>{% endif %}
+      </form>
+      <div class="audit-table-wrap">
+        <table class="audit-table">
+          <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Details</th><th>IP address</th></tr></thead>
+          <tbody>
+            {% for event in activities %}
+            <tr>
+              <td class="audit-time">{{ event.created_at|date:"M j, Y" }}<br>{{ event.created_at|date:"H:i:s" }}</td>
+              <td class="audit-user">{{ event.user|default:"Deleted user" }}</td>
+              <td class="audit-action"><span>{{ event.action }}</span></td>
+              <td class="audit-details">{{ event.details }}</td>
+              <td class="audit-ip">{{ event.ip_address|default:"—" }}</td>
+            </tr>
+            {% empty %}<tr><td class="audit-empty" colspan="5">No audit events match this filter.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if page_obj.paginator.num_pages > 1 %}
+      <nav class="audit-pagination" aria-label="Audit history pages">
+        <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        <div>
+          {% if page_obj.has_previous %}<a href="?user={{ username|urlencode }}&amp;page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+          {% if page_obj.has_next %}<a href="?user={{ username|urlencode }}&amp;page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+        </div>
+      </nav>
+      {% endif %}
+    </section>
+  </div>
+</main>
+</body>
+</html>

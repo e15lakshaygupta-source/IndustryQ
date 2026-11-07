@@ -1,0 +1,21 @@
+{% extends "organization/base.html" %}
+{% block title %}Organization overview{% endblock %}
+{% block heading %}Organization overview{% endblock %}
+{% block description %}A clear view of your organization structure and managed facilities.{% endblock %}
+{% block content %}
+<section class="org-stats" aria-label="Organization totals">
+  <a class="org-stat" href="{% url 'organization:company_list' %}"><span class="org-stat-label">COMPANIES</span><strong>{{ company_count }}</strong><span class="org-stat-link">View companies &rarr;</span></a>
+  <a class="org-stat" href="{% url 'organization:factory_list' %}"><span class="org-stat-label">FACTORIES</span><strong>{{ factory_count }}</strong><span class="org-stat-link">View factories &rarr;</span></a>
+  <a class="org-stat" href="{% url 'organization:department_list' %}"><span class="org-stat-label">DEPARTMENTS</span><strong>{{ department_count }}</strong><span class="org-stat-link">View departments &rarr;</span></a>
+  <a class="org-stat" href="{% url 'organization:unit_list' %}"><span class="org-stat-label">PRODUCTION UNITS</span><strong>{{ unit_count }}</strong><span class="org-stat-link">View production units &rarr;</span></a>
+</section>
+<section class="org-panel">
+  <h2>Organization structure</h2><p class="org-panel-subtitle">Open a section to review and manage the records in your workspace.</p>
+  <div class="org-table-wrap"><table class="org-table"><thead><tr><th>Level</th><th>Records</th><th>Workspace</th></tr></thead><tbody>
+    <tr><td class="org-name">Companies</td><td>{{ company_count }}</td><td><a href="{% url 'organization:company_list' %}">Browse companies &rarr;</a></td></tr>
+    <tr><td class="org-name">Factories</td><td>{{ factory_count }}</td><td><a href="{% url 'organization:factory_list' %}">Browse factories &rarr;</a></td></tr>
+    <tr><td class="org-name">Departments</td><td>{{ department_count }}</td><td><a href="{% url 'organization:department_list' %}">Browse departments &rarr;</a></td></tr>
+    <tr><td class="org-name">Production units</td><td>{{ unit_count }}</td><td><a href="{% url 'organization:unit_list' %}">Browse production units &rarr;</a></td></tr>
+  </tbody></table></div>
+</section>
+{% endblock %}

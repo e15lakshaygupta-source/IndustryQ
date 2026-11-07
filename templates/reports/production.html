@@ -1,0 +1,51 @@
+{% extends "reports/base.html" %}
+{% block content %}
+<section class="report-panel">
+  <div class="report-panel-head"><div><h2>Production performance</h2><p>Actual output and rejected quantity recorded in your workspace.</p></div></div>
+  <div class="report-kpi-grid">
+    <article class="report-kpi"><span>Actual output</span><strong>{{ actual }}</strong></article>
+    <article class="report-kpi"><span>Rejected units</span><strong>{{ rejected }}</strong></article>
+    <article class="report-kpi"><span>Plans</span><strong>{{ plans }}</strong></article>
+    <article class="report-kpi"><span>Work orders</span><strong>{{ orders }}</strong></article>
+  </div>
+  <form method="get" class="report-filters">
+    <p><label>From</label><input type="date" name="start" value="{{ start }}"></p>
+    <p><label>To</label><input type="date" name="end" value="{{ end }}"></p>
+    <div class="report-actions"><button class="primary" name="format" value="">Filter</button><button name="format" value="csv">Download CSV</button><button name="format" value="pdf">Download PDF</button></div>
+  </form>
+  <div class="report-table-wrap"><table class="report-table"><thead><tr><th>Date</th><th>Factory</th><th>Department / unit</th><th>Product</th><th>Work order</th><th>Actual</th><th>Rejected</th><th>Good units</th></tr></thead><tbody>{% for row in entries %}<tr><td>{{ row.production_date }}</td><td>{{ row.factory.name }}</td><td>{{ row.department.name }} / {{ row.production_unit.name }}</td><td>{{ row.product.sku }}</td><td>{{ row.work_order.order_number|default:"&mdash;" }}</td><td>{{ row.actual_quantity }}</td><td>{{ row.rejected_quantity }}</td><td>{{ row.good_quantity }}</td></tr>{% empty %}<tr><td class="report-empty" colspan="8">No production records in scope.</td></tr>{% endfor %}</tbody></table></div>
+  <p class="report-pagination">Page {{ entries.number }} of {{ entries.paginator.num_pages }}</p>
+</section>
+<section class="report-panel phase-roadmap-card phase-eight-card" aria-labelledby="phase-eight-title">
+  <div class="phase-roadmap-heading"><span class="report-icon" aria-hidden="true">8</span><span class="phase-status">In progress</span></div>
+  <h2 id="phase-eight-title">Phase 8 &mdash; Machines &amp; Quality Management</h2>
+  <ul>
+    <li>Machine registration</li><li>Machine allocation</li><li>Machine status monitoring</li><li>Maintenance scheduling</li>
+    <li>Breakdown records</li><li>Maintenance history</li><li>Quality inspection</li><li>Defect registration</li>
+    <li>Rejection analysis</li><li>Quality performance reports</li><li>Safety incident records</li>
+  </ul>
+  <div class="phase-sample-preview">
+    <div class="phase-sample-heading"><div><strong>Sample records</strong><p>Illustrative preview data for the upcoming phase</p></div><span>5 examples</span></div>
+    <div class="report-table-wrap"><table class="report-table"><thead><tr><th>Sample asset / record</th><th>Type</th><th>Example status</th><th>Example detail</th></tr></thead><tbody>
+      <tr><td>DEMO-CNC-01</td><td>Machine</td><td>Operational</td><td>CNC machining centre</td></tr>
+      <tr><td>DEMO-PRESS-02</td><td>Machine</td><td>Maintenance due</td><td>Hydraulic press</td></tr>
+      <tr><td>DEMO-MOTOR-03</td><td>Breakdown</td><td>Resolved</td><td>Drive motor bearing replaced</td></tr>
+      <tr><td>DEMO-QA-04</td><td>Quality inspection</td><td>Review pending</td><td>Surface finish check</td></tr>
+      <tr><td>DEMO-SAFE-05</td><td>Safety incident</td><td>Under review</td><td>Guarding observation</td></tr>
+    </tbody></table></div>
+    <small class="phase-sample-note">Preview examples only; Phase 8 records are not stored or operational yet.</small>
+  </div>
+</section>
+<style>
+  .phase-roadmap-card{min-width:0;max-width:100%;box-sizing:border-box}
+  .phase-roadmap-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .phase-status{padding:5px 9px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:11px;font-weight:650}
+  .phase-roadmap-card h2{margin:14px 0 10px}
+  .phase-roadmap-card ul{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:0 22px;margin:0;padding-left:18px;color:var(--muted);font-size:12px;line-height:1.9}
+  .phase-sample-preview{margin-top:20px;padding-top:17px;border-top:1px solid var(--line)}
+  .phase-sample-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
+  .phase-sample-heading strong{font-size:13px}.phase-sample-heading p{margin:4px 0;color:var(--muted);font-size:11px}
+  .phase-sample-heading>span{padding:5px 9px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:10px;white-space:nowrap}
+  .phase-sample-note{display:block;margin-top:8px;color:var(--muted);font-size:10px}
+</style>
+{% endblock %}

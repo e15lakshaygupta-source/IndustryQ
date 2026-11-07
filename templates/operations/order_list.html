@@ -1,0 +1,94 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<section class="ops-panel">
+  <div class="ops-panel-head">
+    <div>
+      <h1>Work Orders &amp; Scheduling</h1>
+      <p class="subtitle">Floor orders dispatched to production units with target volumes and live execution status.</p>
+    </div>
+    {% if can_manage %}
+    <a class="ops-btn" href="{% url 'operations:order_create' %}">+ Create Work Order</a>
+    {% endif %}
+  </div>
+
+  <div class="table-scroll">
+    <table class="ops-table">
+      <thead>
+        <tr>
+          <th>Order #</th>
+          <th>Factory / Line</th>
+          <th>Product</th>
+          <th>Target Window</th>
+          <th>Planned</th>
+          <th>Actual</th>
+          <th>Attainment</th>
+          <th>Status</th>
+          {% if can_manage %}<th style="text-align:right;">Actions</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td><strong style="color:var(--text)">{{ order.order_number }}</strong></td>
+          <td>
+            <strong>{{ order.factory.name }}</strong>
+            <small>{{ order.production_unit.name }}</small>
+          </td>
+          <td><span class="sku-pill">{{ order.product.sku }}</span></td>
+          <td>
+            <small style="color:var(--text)">{{ order.scheduled_start|date:"M d" }} &ndash; {{ order.scheduled_end|date:"M d, Y" }}</small>
+          </td>
+          <td>{{ order.planned_quantity }}</td>
+          <td><strong style="color:var(--accent)">{{ order.actual_quantity|default:0 }}</strong></td>
+          <td>
+            <span style="font-weight:700;{% if order.attainment_pct >= 90 %}color:var(--success);{% elif order.attainment_pct >= 50 %}color:var(--warning);{% else %}color:var(--muted);{% endif %}">
+              {{ order.attainment_pct }}%
+            </span>
+            <small>{{ order.variance }} var</small>
+          </td>
+          <td>
+            <span class="badge-status {{ order.status }}">
+              {{ order.get_status_display }}
+            </span>
+          </td>
+          {% if can_manage %}
+          <td style="text-align:right;">
+            <div style="display:inline-flex;align-items:center;gap:8px;">
+              <form method="post" action="{% url 'operations:order_status' order.pk %}" style="display:inline-flex;gap:4px;">
+                {% csrf_token %}
+                <select name="status" style="padding:4px 8px;font-size:11px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--text);">
+                  {% for value,label in order.Status.choices %}
+                  <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="ops-btn secondary" style="padding:4px 8px;font-size:11px;">Update</button>
+              </form>
+              <a href="{% url 'operations:order_edit' order.pk %}" class="panel-link">Edit</a>
+            </div>
+          </td>
+          {% endif %}
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" class="empty-row">No active work orders found in current scope.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if orders.paginator.num_pages > 1 %}
+  <div style="display:flex;justify-content:space-between;align-items:center;padding-top:14px;color:var(--muted);font-size:12px;">
+    <span>Page {{ orders.number }} of {{ orders.paginator.num_pages }}</span>
+    <div style="display:flex;gap:8px;">
+      {% if orders.has_previous %}
+      <a href="?page={{ orders.previous_page_number }}" class="ops-btn secondary" style="padding:5px 12px;font-size:11px;">&larr; Previous</a>
+      {% endif %}
+      {% if orders.has_next %}
+      <a href="?page={{ orders.next_page_number }}" class="ops-btn secondary" style="padding:5px 12px;font-size:11px;">Next &rarr;</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

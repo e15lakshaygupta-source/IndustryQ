@@ -1,0 +1,15 @@
+{% extends "organization/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block description %}Enter the details for this organization record.{% endblock %}
+{% block content %}
+<section class="org-panel org-form">
+  <form method="post">{% csrf_token %}
+    {% for error in form.non_field_errors %}<div class="org-error" role="alert">{{ error }}</div>{% endfor %}
+    <div class="org-form-grid">
+      {% for field in form %}<div class="org-form-field {% if field.field.widget.input_type == 'checkbox' %}full org-form-check{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small class="org-secondary">{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<small class="org-error">{{ error }}</small>{% endfor %}</div>{% endfor %}
+    </div>
+    <div class="org-form-actions"><button class="org-button" type="submit">Save changes</button><a href="{% url 'organization:'|add:kind|add:'_list' %}">Cancel</a></div>
+  </form>
+</section>
+{% endblock %}

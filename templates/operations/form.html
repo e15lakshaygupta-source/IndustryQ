@@ -1,0 +1,38 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<section class="ops-panel">
+  <div class="ops-panel-head">
+    <div>
+      <h1>{{ title }}</h1>
+      <p class="subtitle">Complete the parameters below to save this production record.</p>
+    </div>
+  </div>
+
+  <form method="post" class="ops-form">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="ops-form-field {% if field.name == 'notes' or field.name == 'description' or field.name == 'remarks' %}full{% endif %}">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}
+      <small class="ops-help-text">{{ field.help_text }}</small>
+      {% endif %}
+      {% for error in field.errors %}
+      <p class="error">{{ error }}</p>
+      {% endfor %}
+    </div>
+    {% endfor %}
+
+    {% for error in form.non_field_errors %}
+    <div class="ops-form-field full">
+      <p class="error">{{ error }}</p>
+    </div>
+    {% endfor %}
+
+    <div class="ops-form-actions">
+      <button class="ops-btn" type="submit">Save Record</button>
+      <a href="{% url 'operations:home' %}">&larr; Cancel and return</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

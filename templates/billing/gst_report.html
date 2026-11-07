@@ -1,0 +1,50 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<section class="ops-panel">
+  <div class="ops-panel-head">
+    <div><h1>GST sales summary</h1><p>Issued sales invoices grouped by supply type, place of supply, HSN/SAC, and invoice rate.</p></div>
+    <a class="ops-btn" href="{% url 'billing:home' %}">Back to billing</a>
+  </div>
+  <form method="get" class="ops-inline-form billing-filter">
+    <label for="gst-period">Tax period
+    <input id="gst-period" name="period" type="month" value="{{ period }}" required>
+    </label>
+    <button class="ops-btn" type="submit">Run report</button>
+    <a class="ops-btn" href="{% url 'billing:gst_reconciliation_export' %}?period={{ period }}">Export reconciliation CSV</a>
+  </form>
+  <p>Issued sales invoices: <strong>{{ invoice_count }}</strong></p>
+  {% if unclassified_invoice_count %}<p class="app-flash">This period includes {{ unclassified_invoice_count }} invoice(s) created before GST line snapshots were added. Their tax is shown as unclassified, without CGST/SGST/IGST allocation; review these records before filing.</p>{% endif %}
+  {% for totals in currency_totals %}
+    <h2>{{ totals.currency_code }} totals</h2>
+    <div class="metric-grid">
+      <article class="metric-card"><span>Taxable value</span><strong>{{ totals.currency_code }} {{ totals.taxable_value|floatformat:2 }}</strong></article>
+      <article class="metric-card"><span>CGST</span><strong>{{ totals.currency_code }} {{ totals.cgst_amount|floatformat:2 }}</strong></article>
+      <article class="metric-card"><span>SGST</span><strong>{{ totals.currency_code }} {{ totals.sgst_amount|floatformat:2 }}</strong></article>
+      <article class="metric-card"><span>IGST</span><strong>{{ totals.currency_code }} {{ totals.igst_amount|floatformat:2 }}</strong></article>
+      <article class="metric-card"><span>Total GST</span><strong>{{ totals.currency_code }} {{ totals.tax_amount|floatformat:2 }}</strong></article>
+    </div>
+  {% endfor %}
+</section>
+<section class="ops-panel">
+  <h2>Tax breakdown</h2>
+  <div class="billing-table-wrap"><table class="billing-table">
+    <thead><tr><th>Currency</th><th>Supply</th><th>Place of supply</th><th>HSN/SAC</th><th>Rate</th><th>Taxable value</th><th>CGST</th><th>SGST</th><th>IGST</th><th>Total tax</th></tr></thead>
+    <tbody>
+      {% for row in summary %}
+        <tr>
+          <td>{{ row.currency_code }}</td><td>{{ row.supply_type }}</td><td>{{ row.place_of_supply }}</td><td>{{ row.hsn_sac_code }}</td>
+          <td>{{ row.tax_rate }}%</td><td>{{ row.taxable_value|floatformat:2 }}</td>
+          <td>{{ row.cgst_amount|floatformat:2 }}</td><td>{{ row.sgst_amount|floatformat:2 }}</td>
+          <td>{{ row.igst_amount|floatformat:2 }}</td><td>{{ row.tax_amount|floatformat:2 }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="10">No issued sales invoices for this tax period.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+</section>
+<section class="ops-panel">
+  <h2>Configuration</h2>
+  <p>Manage GST tax profiles and effective-dated rates in <a href="{% url 'admin:operations_gsttaxprofile_changelist' %}">GST tax profiles</a>. Assign each profile, HSN/SAC code, and applicable fallback rate to products in the product catalogue.</p>
+</section>
+{% endblock %}

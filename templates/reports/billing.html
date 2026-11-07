@@ -1,0 +1,57 @@
+{% extends "reports/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<section class="report-panel">
+  <div class="report-panel-head">
+    <div><h2>{{ title }}</h2><p>Billing data is limited to factories in your assigned scope.</p></div>
+  </div>
+  <form method="get" class="report-filters">
+    <p><label for="report-type">Report</label>
+      <select id="report-type" name="report">
+        {% for key, label in report_types %}<option value="{{ key }}" {% if key == report_key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </p>
+    <p><label for="report-start">From</label><input id="report-start" type="date" name="start" value="{{ form.start.value|default:'' }}"></p>
+    <p><label for="report-end">To</label><input id="report-end" type="date" name="end" value="{{ form.end.value|default:'' }}"></p>
+    <p><label for="report-currency">Currency</label>
+      <select id="report-currency" name="currency">
+        <option value="">All currencies</option>
+        {% for code in currencies %}<option value="{{ code }}" {% if code == currency %}selected{% endif %}>{{ code }}</option>{% endfor %}
+      </select>
+    </p>
+    {% if report_key == "customer_ledger" or report_key == "supplier_ledger" %}
+    <p><label for="report-party">Customer / supplier</label>
+      <select id="report-party" name="party">
+        <option value="">All parties</option>
+        {% for party_id, party_name in parties %}<option value="{{ party_id }}" {% if party_filter == party_id|stringformat:"s" %}selected{% endif %}>{{ party_name }}</option>{% endfor %}
+      </select>
+    </p>
+    {% endif %}
+    <div class="report-actions">
+      <button type="submit" class="primary">Apply filters</button>
+      <button type="submit" name="format" value="csv">Export CSV</button>
+      <button type="submit" name="format" value="pdf">Export PDF</button>
+    </div>
+  </form>
+  {% if form.errors %}<p role="alert">Enter a valid date range.</p>{% endif %}
+  <div class="report-table-wrap">
+    <table class="report-table">
+      <thead><tr>{% for header in headers %}<th>{{ header }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for row in page_obj %}
+        <tr>{% for value in row %}<td>{{ value|default_if_none:"" }}</td>{% endfor %}</tr>
+      {% empty %}
+        <tr><td class="report-empty" colspan="{{ headers|length }}">No records match the selected filters.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="report-pagination">
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} &middot; {{ page_obj.paginator.count }} rows</span>
+    <span>
+      {% if page_obj.has_previous %}<a href="?report={{ report_key }}&start={{ form.start.value|default:'' }}&end={{ form.end.value|default:'' }}&currency={{ currency }}&party={{ party_filter }}&page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+      {% if page_obj.has_next %}<a href="?report={{ report_key }}&start={{ form.start.value|default:'' }}&end={{ form.end.value|default:'' }}&currency={{ currency }}&party={{ party_filter }}&page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+    </span>
+  </div>
+</section>
+{% endblock %}

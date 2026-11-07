@@ -1,0 +1,76 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<header class="billing-heading">
+  <div><p class="billing-kicker">FINANCE / ACCOUNTS RECEIVABLE &amp; PAYABLE</p><h1>Sales &amp; purchasing billing</h1><p>Create customer invoices, register supplier bills, and track payments and outstanding balances.</p></div>
+  <div class="billing-actions">
+    <a class="ops-btn secondary" href="{% url 'billing:gst_report' %}">GST reports</a>
+    <a class="ops-btn secondary" href="{% url 'billing:adjustment_list' %}">Credit / debit notes</a>
+    {% if can_manage %}
+    <a class="ops-btn billing-create-invoice" href="{% url 'billing:document_create' %}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M14 3v5h5M9 13h6M9 17h6M12 10v6"/></svg>
+      Generate sales invoice
+    </a>
+    <a class="ops-btn" href="{% url 'billing:purchase_bill_create' %}">Register supplier bill</a>
+    <a class="ops-btn secondary" href="{% url 'operations:material_planning' %}">Purchase raw materials</a>
+    <a class="ops-btn secondary" href="{% url 'operations:inventory_form' 'supplier' %}">Add supplier</a>
+    <a class="ops-btn secondary" href="{% url 'billing:customer_create' %}">Add customer</a>
+    {% endif %}
+  </div>
+</header>
+{% if can_manage %}
+<aside class="billing-data-warning" role="note">
+  <strong>GST and legal record check</strong>
+  <span>Before issuing, use verified company and customer details, valid GSTINs where applicable, the correct place of supply, and product HSN/SAC and tax rates. INDUSTRIQ checks formats and calculations; it cannot confirm official registration status or replace professional tax review.</span>
+</aside>
+{% endif %}
+{% if can_manage %}
+<a class="billing-create-card" href="{% url 'billing:document_create' %}">
+  <span class="billing-create-card-icon" aria-hidden="true">
+    <svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M14 3v5h5M9 13h6M9 17h6M12 10v6"/></svg>
+  </span>
+  <span class="billing-create-card-copy">
+    <strong>Create a customer invoice</strong>
+    <small>Add customer and item details, calculate GST, then review and issue the invoice.</small>
+  </span>
+  <span class="billing-create-card-cta">Start invoice <b aria-hidden="true">&rarr;</b></span>
+</a>
+{% endif %}
+<section class="billing-metrics" aria-label="Billing summary">
+  <article class="billing-metric"><span>Sales invoiced</span><strong>{{ sales_total }}</strong></article>
+  <article class="billing-metric"><span>Sales balance due</span><strong>{{ sales_due }}</strong></article>
+  <article class="billing-metric"><span>Supplier bills</span><strong>{{ bills_total }}</strong></article>
+  <article class="billing-metric"><span>Supplier balances due</span><strong>{{ supplier_due }}</strong></article>
+  <article class="billing-metric"><span>Overdue sales</span><strong>{{ overdue_count }}</strong></article>
+  <article class="billing-metric"><span>Overdue supplier bills</span><strong>{{ supplier_overdue_count }}</strong></article>
+</section>
+<section class="ops-panel">
+  <div class="ops-panel-head"><div><h2>Invoice &amp; supplier bill register</h2><p>Filter by document type and payment status.</p></div></div>
+  <form method="get" class="ops-inline-form billing-filter">
+    <label>Document type<select name="kind"><option value="">All types</option><option value="sales_invoice" {% if kind_filter == 'sales_invoice' %}selected{% endif %}>Sales invoice</option><option value="supplier_bill" {% if kind_filter == 'supplier_bill' %}selected{% endif %}>Supplier bill</option></select></label>
+    <label>Payment status<select name="status"><option value="">All statuses</option><option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option><option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option><option value="unpaid" {% if status_filter == 'unpaid' %}selected{% endif %}>Unpaid</option><option value="part_paid" {% if status_filter == 'part_paid' %}selected{% endif %}>Partially paid</option><option value="overdue" {% if status_filter == 'overdue' %}selected{% endif %}>Overdue</option><option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option><option value="void" {% if status_filter == 'void' %}selected{% endif %}>Cancelled</option></select></label>
+    <button class="ops-btn" type="submit">Apply filters</button>
+    {% if kind_filter or status_filter %}<a class="ops-btn secondary" href="{% url 'billing:home' %}">Clear</a>{% endif %}
+  </form>
+  <div class="billing-table-wrap"><table class="billing-table"><thead><tr><th>Document</th><th>Type / party</th><th>Supplier invoice</th><th>Issue / due dates</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead><tbody>
+    {% for doc in documents %}
+    <tr><td><a href="{% url 'billing:document_detail' doc.pk %}"><strong>{{ doc.number }}</strong></a><small>{{ doc.factory.name }}</small></td><td>{{ doc.get_kind_display }}<small>{% if doc.customer %}{{ doc.customer.name }}{% else %}{{ doc.supplier.name|default:"—" }}{% endif %}</small></td><td>{{ doc.supplier_invoice_number|default:"—" }}</td><td>{{ doc.issue_date }}<small>Due {{ doc.due_date|default:"—" }}</small></td><td>{{ doc.currency_code }} {{ doc.total }}</td><td>{{ doc.amount_paid }}</td><td><strong>{{ doc.balance_due }}</strong></td><td>{{ doc.get_payment_status_display }}</td></tr>
+    {% empty %}<tr><td colspan="8">No invoices or bills match these filters.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+<section class="ops-panel">
+  <div class="ops-panel-head"><div><h2>Suppliers</h2><p>Registered supplier tax profiles and outstanding balances.</p></div>
+    <form method="get" class="ops-inline-form billing-filter"><input type="hidden" name="kind" value="supplier_bill"><label>Search supplier<input type="search" name="supplier" value="{{ supplier_query }}" placeholder="Name or GSTIN"></label><button class="ops-btn" type="submit">Search</button></form>
+  </div>
+  <div class="billing-table-wrap"><table class="billing-table"><thead><tr><th>Supplier</th><th>Factory</th><th>Contact</th><th>GSTIN / state</th><th>Outstanding balance</th></tr></thead><tbody>
+    {% for supplier in suppliers %}<tr><td><strong>{{ supplier.name }}</strong></td><td>{{ supplier.factory.name }}</td><td>{{ supplier.email|default:"—" }}{% if supplier.phone %}<small>{{ supplier.phone }}</small>{% endif %}</td><td>{{ supplier.gstin|default:"—" }}<small>{{ supplier.state|default:"—" }} ({{ supplier.state_code|default:"—" }})</small></td><td><strong>{{ supplier.outstanding_balance }}</strong></td></tr>
+    {% empty %}<tr><td colspan="5">No suppliers registered for your factories yet.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+<section class="ops-panel">
+  <div class="ops-panel-head"><div><h2>Customers</h2><p>Customer tax profiles and current receivable balances. Active customers are available when creating an invoice.</p></div>{% if can_manage %}<a class="ops-btn" href="{% url 'billing:customer_create' %}">+ Add customer</a>{% endif %}</div>
+  <div class="billing-table-wrap"><table class="billing-table"><thead><tr><th>Customer</th><th>Contact</th><th>GSTIN / outstanding</th></tr></thead><tbody>
+    {% for customer in customers %}<tr><td><a href="{% url 'billing:customer_detail' customer.pk %}"><strong>{{ customer.customer_id }} · {{ customer.name }}</strong></a><small>{{ customer.get_customer_type_display }}</small></td><td>{{ customer.email|default:"—" }}{% if customer.phone %}<small>{{ customer.phone }}</small>{% endif %}</td><td>{{ customer.tax_registration_number|default:"—" }}<small>Outstanding {{ customer.outstanding_balance }}</small></td></tr>
+    {% empty %}<tr><td colspan="3">No customers have been added.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} | INDUSTRIQ</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261106">
+</head>
+<body class="auth-page">
+  {% if request.user.is_authenticated %}
+  {% include "partials/app_sidebar.html" %}
+  <main class="app-content">
+  {% endif %}
+  <main class="page auth-layout">
+    <section class="visual-panel auth-visual">
+      <a class="brand auth-brand" href="{% url 'login' %}">
+        <span class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none">
+            <rect x="5" y="16" width="4" height="10" rx="1" fill="currentColor"/>
+            <rect x="11" y="11" width="4" height="15" rx="1" fill="currentColor"/>
+            <rect x="17" y="6" width="4" height="20" rx="1" fill="currentColor"/>
+            <rect x="23" y="13" width="4" height="13" rx="1" fill="currentColor"/>
+          </svg>
+        </span>
+        <span class="auth-wordmark"><strong>INDUSTRI<span>Q</span></strong><small>OPERATIONS, CONNECTED</small></span>
+      </a>
+      <div class="hero">
+        <div class="eyebrow"><span class="pulse"></span> INDUSTRIAL OPERATIONS, IN FOCUS</div>
+        <h1>Build with<br><span>confidence.</span></h1>
+        <p>Create your INDUSTRIQ account and get a clear view of your assigned workspace, people, and production.</p>
+      </div>
+      <div class="auth-feature-list" aria-label="Platform highlights">
+        <span><b>01</b> Connected operations</span>
+        <span><b>02</b> Clear team ownership</span>
+        <span><b>03</b> Decisions backed by data</span>
+      </div>
+      <div class="visual-footer"><span>INDUSTRY 4.0 READY</span><span>SECURE BY DESIGN</span><span>BUILT FOR THE FLOOR</span></div>
+    </section>
+    <section class="login-panel auth-form-panel">
+      <div class="login-content auth-form-content">
+        <a class="mobile-brand auth-mobile-brand" href="{% url 'login' %}">
+          <span class="brand-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><rect x="5" y="16" width="4" height="10" rx="1" fill="currentColor"/><rect x="11" y="11" width="4" height="15" rx="1" fill="currentColor"/><rect x="17" y="6" width="4" height="20" rx="1" fill="currentColor"/><rect x="23" y="13" width="4" height="13" rx="1" fill="currentColor"/></svg></span>
+          <span class="auth-wordmark">INDUSTRI<span>Q</span><small>OPERATIONS, CONNECTED</small></span>
+        </a>
+        <div class="welcome">INDUSTRIQ ACCOUNT</div>
+        <h2>{{ title }}</h2>
+        <p class="subtitle">Set up your secure access to the INDUSTRIQ workspace.</p>
+        {% if title == "Create your account" %}<p class="auth-role-note">Self-registration creates an employee account. Manager and administrator access must be assigned by your system administrator.</p>{% endif %}
+        {% for message in messages %}<p class="auth-message">{{ message }}</p>{% endfor %}
+        <form method="post" class="auth-form">
+          {% csrf_token %}
+          {% for error in form.non_field_errors %}<p class="error">{{ error }}</p>{% endfor %}
+          {% for field in form %}
+            <div class="auth-field">
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<small class="auth-help">{{ field.help_text|safe }}</small>{% endif %}
+              {% for error in field.errors %}<small class="error">{{ error }}</small>{% endfor %}
+            </div>
+          {% endfor %}
+          <button class="login-button" type="submit">{{ button }} <span aria-hidden="true">&rarr;</span></button>
+        </form>
+        {% if not request.user.is_authenticated %}<div class="auth-bottom-links"><span>Already have an account?</span><a href="{% url 'login' %}">Sign in</a></div>{% endif %}
+        <div class="security-note"><span>◆</span> Protected workspace · Authorized access only</div>
+        <div class="copyright">© 2026 INDUSTRIQ · INDUSTRIAL OPERATIONS</div>
+      </div>
+    </section>
+  </main>
+  {% if request.user.is_authenticated %}</main>{% endif %}
+</body>
+</html>

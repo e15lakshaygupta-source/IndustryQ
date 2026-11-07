@@ -1,0 +1,122 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INDUSTRIQ | Industrial Operations</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261106">
+</head>
+<body class="auth-page">
+    <main class="page auth-layout">
+        <section class="visual-panel auth-visual">
+            <div class="brand auth-brand-lockup">
+                <span class="brand-icon" aria-hidden="true">
+                    <svg viewBox="0 0 32 32" fill="none">
+                        <rect x="5" y="16" width="4" height="10" rx="1" fill="currentColor"/>
+                        <rect x="11" y="11" width="4" height="15" rx="1" fill="currentColor"/>
+                        <rect x="17" y="6" width="4" height="20" rx="1" fill="currentColor"/>
+                        <rect x="23" y="13" width="4" height="13" rx="1" fill="currentColor"/>
+                    </svg>
+                </span>
+                <div class="auth-wordmark">
+                    <h2>INDUSTRI<span>Q</span></h2>
+                    <small>OPERATIONS, CONNECTED</small>
+                </div>
+            </div>
+
+            <div class="hero">
+                <div class="eyebrow"><span class="pulse"></span> THE OPERATING SYSTEM FOR INDUSTRY</div>
+                <h1>Make every<br>operation <span>work better.</span></h1>
+                <p>Bring your people, production and performance into one clear view. Give every team the context to move work forward.</p>
+            </div>
+
+            <div class="auth-platform-strip" aria-label="Connected platform areas">
+                <span>WORKFORCE</span><i></i><span>PRODUCTION</span><i></i><span>QUALITY</span><i></i><span>FINANCE</span>
+            </div>
+            <div class="visual-footer">
+                <span>ONE CONNECTED WORKSPACE</span>
+                <span>BUILT FOR INDUSTRIAL TEAMS</span>
+            </div>
+        </section>
+
+        <section class="login-panel auth-form-panel">
+            <div class="login-content auth-form-content">
+                <a class="mobile-brand auth-mobile-brand" href="{% url 'login' %}">
+                    <span class="brand-icon" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><rect x="5" y="16" width="4" height="10" rx="1" fill="currentColor"/><rect x="11" y="11" width="4" height="15" rx="1" fill="currentColor"/><rect x="17" y="6" width="4" height="20" rx="1" fill="currentColor"/><rect x="23" y="13" width="4" height="13" rx="1" fill="currentColor"/></svg></span>
+                    <span class="auth-wordmark">INDUSTRI<span>Q</span><small>OPERATIONS, CONNECTED</small></span>
+                </a>
+                <div class="welcome">WELCOME BACK</div>
+                <h2>Access your workspace</h2>
+                <p class="subtitle">Employees, managers, company admins, and system admins all use the same sign-in. Your account permissions determine what you can access.</p>
+
+                <form method="post" class="auth-form">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="error">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="auth-field"><label for="id_username">Username</label>
+                    <input
+                        type="text"
+                        name="username"
+                        id="id_username"
+                        placeholder="Enter your username"
+                        autocomplete="username"
+                        value="{{ form.username.value|default:'' }}"
+                        aria-invalid="{% if form.username.errors %}true{% else %}false{% endif %}"
+                        {% if form.username.errors %}aria-describedby="username-error"{% endif %}
+                        required
+                    ></div>
+                    {% for error in form.username.errors %}<small class="error" id="username-error">{{ error }}</small>{% endfor %}
+
+                    <div class="auth-field"><label for="id_password">Password</label>
+                    <div class="password-wrap">
+                        <input
+                            type="password"
+                            name="password"
+                            id="id_password"
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                            aria-invalid="{% if form.password.errors %}true{% else %}false{% endif %}"
+                            {% if form.password.errors %}aria-describedby="password-error"{% endif %}
+                            required
+                        >
+                        <button type="button" class="show-password" onclick="togglePassword()">SHOW</button>
+                    </div></div>
+                    {% for error in form.password.errors %}<small class="error" id="password-error">{{ error }}</small>{% endfor %}
+
+                    <button type="submit" class="login-button">Sign In <span>→</span></button>
+                </form>
+
+                <div class="auth-bottom-links"><span>New to INDUSTRIQ?</span><a href="{% url 'register' %}">Create an employee account</a></div>
+                <p class="auth-role-note">Self-registration creates an employee account. Manager and administrator access must be assigned by your system administrator.</p>
+                <div class="security-note">
+                    <span>◆</span> Protected workspace · Authorized access only
+                </div>
+                <p class="auth-forgot"><a href="{% url 'password_reset' %}">Forgot password?</a></p>
+                <div class="copyright">© 2026 INDUSTRIQ · INDUSTRIAL OPERATIONS</div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function togglePassword() {
+            const field = document.getElementById("id_password");
+            const button = document.querySelector(".show-password");
+            if (field.type === "password") {
+                field.type = "text";
+                button.textContent = "HIDE";
+            } else {
+                field.type = "password";
+                button.textContent = "SHOW";
+            }
+        }
+    </script>
+</body>
+</html>

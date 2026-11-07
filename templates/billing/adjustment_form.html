@@ -1,0 +1,75 @@
+{% extends "operations/base.html" %}
+{% block content %}
+<section class="ops-panel">
+  <div class="ops-panel-head">
+    <div>
+      <h1>Create {{ note_label }}</h1>
+      <p>Original document <a href="{% url 'billing:document_detail' source.pk %}">{{ source.number }}</a> · {{ source.factory.name }}</p>
+    </div>
+    <a class="ops-btn" href="{% url 'billing:adjustment_list' %}">Adjustment history</a>
+  </div>
+  <form method="post" id="adjustment-form">
+    {% csrf_token %}
+    <div class="invoice-fields">
+      {% for error in form.non_field_errors %}<p class="error">{{ error }}</p>{% endfor %}
+      {% for field in form %}
+        <div class="invoice-field {% if field.name == 'reason' %}full{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<small class="ops-help-text">{{ field.help_text }}</small>{% endif %}
+          {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+    <section class="billing-lines-panel">
+      <h2>Return items</h2>
+      <p>Tax rates and tax components are prorated from the original invoice lines. The adjustment cannot exceed the remaining quantity on a source line.</p>
+      <div id="adjustment-lines" class="invoice-lines"></div>
+    {% if available_lines %}
+      <button class="ops-btn secondary" type="button" id="add-adjustment-line">Add return item</button>
+    {% else %}
+      <p>All original invoice quantities have already been returned.</p>
+    {% endif %}
+    </section>
+    <input type="hidden" name="lines" id="adjustment-lines-json">
+    <div class="ops-form-actions"><button class="ops-btn" type="submit" {% if not available_lines %}disabled{% endif %}>Save draft {{ note_label|lower }}</button><a href="{% url 'billing:adjustment_list' %}">Cancel and return</a></div>
+  </form>
+</section>
+<div hidden id="source-lines">{% for line in available_lines %}<span data-line-id="{{ line.id }}" data-description="{{ line.description }}" data-available="{{ line.quantity }}"></span>{% endfor %}</div>
+<script>
+(() => {
+  const host = document.getElementById("adjustment-lines");
+  const output = document.getElementById("adjustment-lines-json");
+  const form = document.getElementById("adjustment-form");
+  const sourceLines = [...document.querySelectorAll("#source-lines [data-line-id]")];
+
+  function addLine() {
+    const row = document.createElement("div");
+    row.className = "adjustment-line";
+    row.innerHTML = '<select aria-label="Original invoice item" required><option value="">Choose original item</option></select><input type="number" min="0.001" step="0.001" aria-label="Return quantity" required><button type="button">Remove</button>';
+    const [source, quantity, remove] = row.children;
+    for (const item of sourceLines) {
+      const option = document.createElement("option");
+      option.value = item.dataset.lineId;
+      option.textContent = `${item.dataset.description} (available ${item.dataset.available})`;
+      option.dataset.available = item.dataset.available;
+      source.append(option);
+    }
+    source.addEventListener("change", () => {
+      quantity.max = source.selectedOptions[0].dataset.available || "";
+    });
+    remove.addEventListener("click", () => row.remove());
+    host.append(row);
+  }
+
+  document.getElementById("add-adjustment-line")?.addEventListener("click", addLine);
+  if (sourceLines.length) addLine();
+  form.addEventListener("submit", () => {
+    output.value = JSON.stringify([...host.children].map((row) => ({
+      source_line: row.children[0].value,
+      quantity: row.children[1].value,
+    })));
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,658 @@
+{% extends "operations/base.html" %}
+{% block content %}
+
+<header class="production-heading">
+  <div>
+    <p class="eyebrow">PRODUCTION OVERVIEW &middot; LIVE TELEMETRY</p>
+    <h1>Production Command Dashboard</h1>
+    <p class="subtitle">Real-time shop floor execution, schedule attainment, and quality yields across assigned facilities.</p>
+  </div>
+  <div class="production-date">
+    <span>OPERATIONAL DATE</span>
+    <strong>{{ today|date:"l, F j, Y" }}</strong>
+  </div>
+</header>
+
+<!-- Network telemetry banner -->
+<div class="production-network-banner">
+  <div class="network-badge">
+    <span class="pulse-dot"></span>
+    <strong>PLANT NETWORK LIVE</strong>
+  </div>
+  <div class="network-stats">
+    <div class="stat-pill">
+      <span class="label">Factories</span>
+      <strong class="val">{{ factory_count }}</strong>
+    </div>
+    <div class="stat-pill">
+      <span class="label">Production Lines</span>
+      <strong class="val">{{ unit_count }}</strong>
+    </div>
+    <div class="stat-pill">
+      <span class="label">Active Plans</span>
+      <strong class="val">{{ active_plans }}</strong>
+    </div>
+    <div class="stat-pill">
+      <span class="label">Work Orders</span>
+      <strong class="val">{{ open_orders }}</strong>
+    </div>
+    <div class="stat-pill">
+      <span class="label">Catalogue SKUs</span>
+      <strong class="val">{{ product_count }}</strong>
+    </div>
+  </div>
+</div>
+
+<!-- Key Performance Indicators -->
+<section class="production-kpis">
+  <article class="production-kpi-card">
+    <div class="kpi-top">
+      <span class="kpi-label">Actual Output Today</span>
+      <span class="kpi-icon actual">&#9650;</span>
+    </div>
+    <strong class="kpi-num">{{ actual_today }}</strong>
+    <span class="kpi-meta">Recorded finished units</span>
+  </article>
+
+  <article class="production-kpi-card">
+    <div class="kpi-top">
+      <span class="kpi-label">Planned Output Today</span>
+      <span class="kpi-icon planned">&#9672;</span>
+    </div>
+    <strong class="kpi-num">{{ planned_today }}</strong>
+    <span class="kpi-meta">Scheduled work-order volume</span>
+  </article>
+
+  <article class="production-kpi-card">
+    <div class="kpi-top">
+      <span class="kpi-label">Schedule Attainment</span>
+      <span class="kpi-icon attainment">&#10003;</span>
+    </div>
+    <strong class="kpi-num">
+      {% if attainment_pct != None %}{{ attainment_pct }}%{% else %}&mdash;{% endif %}
+    </strong>
+    <span class="kpi-meta">Actual vs scheduled targets</span>
+  </article>
+
+  <article class="production-kpi-card">
+    <div class="kpi-top">
+      <span class="kpi-label">Quality Yield</span>
+      <span class="kpi-icon yield">&#9881;</span>
+    </div>
+    <strong class="kpi-num">
+      {% if yield_pct != None %}{{ yield_pct }}%{% else %}&mdash;{% endif %}
+    </strong>
+    <span class="kpi-meta">{{ rejected_today }} units rejected</span>
+  </article>
+</section>
+
+<!-- Main Visual Grid -->
+<section class="production-layout">
+  <!-- Trend Chart -->
+  <article class="production-panel">
+    <div class="panel-heading">
+      <div>
+        <h2>7-Day Output Trend</h2>
+        <p>Actual vs rejected production over the trailing week</p>
+      </div>
+      <a href="{% url 'operations:history' %}" class="panel-link">Full History &rarr;</a>
+    </div>
+
+    <div class="production-chart-wrapper">
+      <div class="production-chart" id="production-chart"></div>
+    </div>
+
+    <div class="chart-legend">
+      <span><i class="legend-actual"></i> Actual Good Output</span>
+      <span><i class="legend-rejected"></i> Rejected Losses</span>
+    </div>
+  </article>
+
+  <!-- Quick Actions -->
+  <article class="production-panel quick-actions-panel">
+    <div class="panel-heading">
+      <div>
+        <h2>Floor Actions</h2>
+        <p>Execute production events</p>
+      </div>
+    </div>
+
+    <div class="quick-actions-list">
+      {% if can_manage %}
+      <a href="{% url 'operations:entry_create' %}" class="action-card primary-action">
+        <div class="action-icon">+</div>
+        <div class="action-info">
+          <strong>Record Daily Output</strong>
+          <small>Post actual counts and rejects</small>
+        </div>
+        <span class="action-arrow">&rarr;</span>
+      </a>
+
+      <a href="{% url 'operations:order_create' %}" class="action-card">
+        <div class="action-icon">&#9776;</div>
+        <div class="action-info">
+          <strong>Create Work Order</strong>
+          <small>Dispatch line target &amp; schedule</small>
+        </div>
+        <span class="action-arrow">&rarr;</span>
+      </a>
+
+      <a href="{% url 'operations:plan_create' %}" class="action-card">
+        <div class="action-icon">&#9638;</div>
+        <div class="action-info">
+          <strong>Plan Production</strong>
+          <small>Establish unit-level targets</small>
+        </div>
+        <span class="action-arrow">&rarr;</span>
+      </a>
+
+      <a href="{% url 'operations:product_create' %}" class="action-card">
+        <div class="action-icon">&#9635;</div>
+        <div class="action-info">
+          <strong>Phase 3: Product Pricing</strong>
+          <small>SKU, selling price, tax, discounts</small>
+        </div>
+        <span class="action-arrow">&rarr;</span>
+      </a>
+      {% else %}
+      <div class="read-only-notice">
+        <p>Your current access role is set to view-only for production entry submission.</p>
+      </div>
+      {% endif %}
+    </div>
+  </article>
+</section>
+
+<!-- Factory Output Today -->
+<section class="production-panel">
+  <div class="panel-heading">
+    <div>
+      <h2>Factory Output Breakdown (Today)</h2>
+      <p>Performance across {{ factory_count }} industrial facilities in your assigned workspace</p>
+    </div>
+    <a href="{% url 'operations:unit_performance' %}" class="panel-link">Unit Performance &rarr;</a>
+  </div>
+
+  <p class="table-scroll-hint">Scroll horizontally to see all columns <span aria-hidden="true">&rarr;</span></p>
+  <div class="table-scroll" role="region" aria-label="Factory output table" tabindex="0">
+    <table class="ops-table">
+      <thead>
+        <tr>
+          <th>Factory</th>
+          <th>Actual Output</th>
+          <th>Rejected</th>
+          <th>Good Units</th>
+          <th>Reject Rate</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in factory_performance %}
+        <tr>
+          <td><strong>{{ row.factory__name }}</strong></td>
+          <td>{{ row.actual }}</td>
+          <td><span style="color:var(--warning)">{{ row.rejected }}</span></td>
+          <td><strong style="color:var(--accent)">{{ row.good }}</strong></td>
+          <td>{{ row.reject_rate }}%</td>
+          <td>
+            <span class="badge-status {% if row.reject_rate < 5 %}active{% else %}draft{% endif %}">
+              {% if row.reject_rate < 5 %}HEALTHY{% else %}NEEDS REVIEW{% endif %}
+            </span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="empty-row">No production was posted yet for today.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- Recent Production Entries -->
+<section class="production-panel">
+  <div class="panel-heading">
+    <div>
+      <h2>Recent Production Submissions</h2>
+      <p>Latest verified batch entries posted to the database</p>
+    </div>
+    <a href="{% url 'operations:history' %}" class="panel-link">View Full History &rarr;</a>
+  </div>
+
+  <p class="table-scroll-hint">Scroll horizontally to see all columns <span aria-hidden="true">&rarr;</span></p>
+  <div class="table-scroll" role="region" aria-label="Recent production submissions table" tabindex="0">
+    <table class="ops-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Factory / Line</th>
+          <th>Product SKU</th>
+          <th>Actual</th>
+          <th>Rejected</th>
+          <th>Good Units</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in recent_entries %}
+        <tr>
+          <td>{{ row.production_date|date:"M d, Y" }}</td>
+          <td>
+            <strong>{{ row.factory.name }}</strong>
+            <small>{{ row.production_unit.name }} &middot; {{ row.department.name }}</small>
+          </td>
+          <td><span class="sku-pill">{{ row.product.sku }}</span></td>
+          <td>{{ row.actual_quantity }}</td>
+          <td><span style="color:var(--warning)">{{ row.rejected_quantity }}</span></td>
+          <td><strong style="color:var(--text)">{{ row.good_quantity }}</strong></td>
+          <td><span class="badge-status active">VERIFIED</span></td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="empty-row">No production records found in current scope.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<style>
+  .production-heading,
+  .production-network-banner,
+  .production-kpis,
+  .production-layout,
+  .production-panel { min-width: 0; max-width: 100%; box-sizing: border-box; }
+  .production-kpi-card { min-width: 0; box-sizing: border-box; }
+  .production-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    margin-bottom: 22px;
+  }
+  .production-heading h1 {
+    font-size: clamp(24px, 3vw, 32px);
+    margin: 6px 0 4px;
+    letter-spacing: -0.02em;
+    font-weight: 850;
+  }
+  .production-heading .subtitle {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    max-width: 680px;
+  }
+  .production-date {
+    text-align: right;
+    white-space: nowrap;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 10px 16px;
+    border-radius: 10px;
+  }
+  .production-date span {
+    display: block;
+    font-size: 10px;
+    font-weight: 750;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+  .production-date strong {
+    display: block;
+    margin-top: 3px;
+    color: var(--text);
+    font-size: 13px;
+  }
+
+  /* Network Telemetry Banner */
+  .production-network-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 20px;
+    margin-bottom: 22px;
+    box-shadow: var(--shadow);
+  }
+  .network-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--success);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+  .pulse-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 10px var(--success);
+    animation: status-pulse 2s infinite ease-in-out;
+  }
+  .network-stats {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .stat-pill {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    font-size: 12px;
+  }
+  .stat-pill .label {
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .stat-pill .val {
+    color: var(--accent);
+    font-weight: 800;
+    font-size: 15px;
+  }
+
+  /* KPI Grid */
+  .production-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 22px;
+    min-width: 0;
+  }
+  .production-kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+    transition: transform 0.16s ease, border-color 0.16s ease;
+  }
+  .production-kpi-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+  }
+  .kpi-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .kpi-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .kpi-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+    background: var(--surface-2);
+  }
+  .kpi-icon.actual { color: var(--accent); }
+  .kpi-icon.planned { color: var(--info); }
+  .kpi-icon.attainment { color: var(--success); }
+  .kpi-icon.yield { color: var(--warning); }
+  .kpi-num {
+    display: block;
+    font-size: clamp(24px, 2.5vw, 32px);
+    font-weight: 850;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .kpi-meta {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+
+  /* Visual Layout */
+  .production-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(min(100%, 280px), 1fr);
+    gap: 16px;
+    margin-bottom: 22px;
+    min-width: 0;
+  }
+  .production-panel {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: var(--shadow);
+  }
+  .panel-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .panel-heading h2 {
+    font-size: 17px;
+    font-weight: 750;
+    margin: 0 0 4px;
+    color: var(--text);
+  }
+  .panel-heading p {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0;
+  }
+  .panel-link {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .panel-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Chart Styles */
+  .production-chart-wrapper {
+    padding: 10px 0 25px;
+    border-bottom: 1px solid var(--line);
+  }
+  .production-chart {
+    height: 200px;
+    display: flex;
+    align-items: end;
+    gap: clamp(10px, 2.5vw, 28px);
+    padding: 0 10px;
+  }
+  .production-day {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: end;
+    position: relative;
+    gap: 6px;
+  }
+  .production-day strong {
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 700;
+  }
+  .production-bars {
+    height: 155px;
+    width: min(72px, 100%);
+    display: flex;
+    align-items: end;
+    justify-content: center;
+    gap: 4px;
+  }
+  .production-bar {
+    width: 45%;
+    border-radius: 5px 5px 0 0;
+    background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--surface)));
+    min-height: 4px;
+    transition: height 0.3s ease;
+  }
+  .production-bar.rejected {
+    background: var(--warning);
+  }
+  .production-day small {
+    position: absolute;
+    bottom: -24px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .chart-legend {
+    display: flex;
+    gap: 22px;
+    margin-top: 30px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .chart-legend i {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .legend-actual { background: var(--accent); }
+  .legend-rejected { background: var(--warning); }
+
+  /* Quick Actions */
+  .quick-actions-list {
+    display: grid;
+    gap: 10px;
+  }
+  .action-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 16px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    text-decoration: none;
+    transition: all 0.16s ease;
+  }
+  .action-card:hover {
+    border-color: var(--accent);
+    transform: translateX(3px);
+  }
+  .action-card.primary-action {
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface-2));
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+  }
+  .action-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    background: var(--surface);
+    color: var(--accent);
+    font-weight: 800;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .action-info {
+    flex: 1;
+  }
+  .action-info strong {
+    display: block;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .action-info small {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 2px;
+  }
+  .action-arrow {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .action-card:hover .action-arrow {
+    color: var(--accent);
+  }
+
+  @media (max-width: 1100px) {
+    .production-kpis {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .production-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 600px) {
+    .production-heading {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .production-date {
+      text-align: left;
+    }
+    .network-stats {
+      gap: 12px;
+    }
+  }
+</style>
+
+<script>
+  const productionRows = {{ trend_json|safe }};
+  const chartHost = document.getElementById('production-chart');
+  if (chartHost && productionRows.length > 0) {
+    const maxVal = Math.max(1, ...productionRows.map(r => r.actual));
+    productionRows.forEach(r => {
+      const col = document.createElement('div');
+      col.className = 'production-day';
+
+      const val = document.createElement('strong');
+      val.textContent = r.actual.toLocaleString();
+
+      const bars = document.createElement('div');
+      bars.className = 'production-bars';
+
+      const barActual = document.createElement('div');
+      barActual.className = 'production-bar';
+      barActual.style.height = Math.max(4, Math.round(r.actual / maxVal * 150)) + 'px';
+      barActual.title = `${r.actual} good units on ${r.day}`;
+
+      const barReject = document.createElement('div');
+      barReject.className = 'production-bar rejected';
+      barReject.style.height = Math.max(2, Math.round(r.rejected / maxVal * 150)) + 'px';
+      barReject.title = `${r.rejected} rejected units on ${r.day}`;
+
+      bars.append(barActual, barReject);
+
+      const label = document.createElement('small');
+      label.textContent = r.day;
+
+      col.append(val, bars, label);
+      chartHost.appendChild(col);
+    });
+  }
+</script>
+
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "organization/base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block heading %}{{ title }}{% endblock %}
+{% block description %}Browse and manage {{ title|lower }} in your authorized workspace.{% endblock %}
+{% block header_action %}{% if can_manage %}<a class="org-button" href="{% url 'organization:'|add:kind|add:'_create' %}">Add {{ title|lower|slice:":-1" }} <span aria-hidden="true">+</span></a>{% endif %}{% endblock %}
+{% block content %}
+<section class="org-panel">
+  <div class="org-toolbar">
+    <form class="org-search" method="get"><input type="search" name="q" value="{{ search_query }}" placeholder="Search {{ title|lower }}" aria-label="Search {{ title|lower }}"><button class="org-button" type="submit">Search</button></form>
+    <span class="org-panel-subtitle">{{ page_obj.paginator.count }} record{{ page_obj.paginator.count|pluralize }}</span>
+  </div>
+  <div class="org-table-wrap"><table class="org-table"><thead><tr><th>Name</th><th>Code / parent</th><th>Status</th>{% if can_manage %}<th>Actions</th>{% endif %}</tr></thead><tbody>
+  {% for item in page_obj %}<tr>
+    <td><span class="org-name">{{ item.name }}</span>{% if kind == 'company' and item.city %}<small class="org-secondary">{{ item.city }}{% if item.country %}, {{ item.country }}{% endif %}</small>{% endif %}</td>
+    <td>{% if kind == 'factory' %}{{ item.factory_code }}<small class="org-secondary">{{ item.company.name }}</small>{% elif kind == 'department' %}{{ item.department_code }}<small class="org-secondary">{{ item.factory.name }}</small>{% elif kind == 'unit' %}{{ item.unit_code }}<small class="org-secondary">{{ item.department.name }}</small>{% else %}{{ item.registration_number|default:"-" }}{% endif %}</td>
+    <td><span class="org-status {% if item.is_active %}active{% else %}inactive{% endif %}">{% if item.is_active %}Active{% else %}Inactive{% endif %}</span></td>
+    {% if can_manage %}<td><div class="org-row-actions"><a href="{% url 'organization:'|add:kind|add:'_edit' item.pk %}">Edit</a><form method="post" action="{% url 'organization:'|add:kind|add:'_delete' item.pk %}">{% csrf_token %}<button class="org-delete" type="submit" onclick="return confirm('Delete this record?')">Delete</button></form></div></td>{% endif %}
+  </tr>{% empty %}<tr><td class="org-empty" colspan="4">No {{ title|lower }} found. Try another search or add a record.</td></tr>{% endfor %}
+  </tbody></table></div>
+  <nav class="org-pagination" aria-label="Pagination"><span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span><div>{% if page_obj.has_previous %}<a href="?q={{ search_query|urlencode }}&page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}{% if page_obj.has_previous and page_obj.has_next %}<span> &middot; </span>{% endif %}{% if page_obj.has_next %}<a href="?q={{ search_query|urlencode }}&page={{ page_obj.next_page_number }}">Next</a>{% endif %}</div></nav>
+</section>
+{% endblock %}

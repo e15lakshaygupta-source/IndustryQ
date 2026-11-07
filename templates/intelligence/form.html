@@ -1,0 +1,19 @@
+{% extends "intelligence/base.html" %}
+{% block content %}
+<section class="panel">
+  <h1>{{ title }}</h1>
+  <form method="post" enctype="multipart/form-data" class="intelligence-form">
+    {% csrf_token %}
+    {% for field in form %}
+    <div class="intelligence-form-field {% if field.field.widget.input_type == 'checkbox' or field.name == 'notes' or field.name == 'description' %}full{% endif %}">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+      {% for error in field.errors %}<small class="error">{{ error }}</small>{% endfor %}
+    </div>
+    {% endfor %}
+    {% for error in form.non_field_errors %}<p class="error">{{ error }}</p>{% endfor %}
+    <div class="intelligence-form-actions"><button class="button" type="submit">{{ button }}</button></div>
+  </form>
+</section>
+{% endblock %}
