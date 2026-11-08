@@ -47,8 +47,9 @@ class SalesInvoiceForm(forms.ModelForm):
         self.fields["customer"].help_text = (
             "Choose the customer's verified legal record. Confirm its GSTIN and place-of-supply state before approval."
         )
-        self.fields["issue_date"].initial = timezone.localdate()
-        self.fields["currency_code"].initial = getattr(settings, "BILLING_DEFAULT_CURRENCY", "INR")
+        if not self.instance.pk:
+            self.fields["issue_date"].initial = timezone.localdate()
+            self.fields["currency_code"].initial = getattr(settings, "BILLING_DEFAULT_CURRENCY", "INR")
 
     @staticmethod
     def _customer_option_label(customer):

@@ -8,6 +8,7 @@ urlpatterns = [
     path("customers/add/", views.customer_create, name="customer_create"),
     path("customers/<int:pk>/", views.customer_detail, name="customer_detail"),
     path("documents/add/", invoice_views.invoice_create, name="document_create"),
+    path("documents/<int:pk>/edit/", invoice_views.invoice_create, name="document_edit"),
     path("purchase-bills/add/", invoice_views.purchase_bill_create, name="purchase_bill_create"),
     path("purchase-bills/<int:pk>/verify/", invoice_views.purchase_bill_verify, name="purchase_bill_verify"),
     path("purchase-bills/<int:pk>/pdf/", invoice_views.purchase_bill_pdf_print, name="purchase_bill_pdf"),

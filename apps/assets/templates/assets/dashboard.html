@@ -1,0 +1,137 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IndustryQ | Asset Management</title>
+<style>
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f3f5f9;
+    color: #202b3c;
+}
+header {
+    background: #14243c;
+    color: white;
+    padding: 24px 5%;
+}
+header h1 { margin: 0 0 7px; }
+header p { margin: 0; color: #cbd5e1; }
+main { padding: 30px 5%; }
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 18px;
+}
+.card {
+    background: white;
+    padding: 23px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+.card h3 { font-size: 14px; color: #64748b; }
+.value { font-size: 27px; font-weight: bold; }
+section {
+    background: white;
+    margin-top: 28px;
+    padding: 24px;
+    border-radius: 12px;
+    overflow-x: auto;
+}
+table { width: 100%; border-collapse: collapse; }
+th, td {
+    text-align: left;
+    padding: 13px;
+    border-bottom: 1px solid #e2e8f0;
+}
+th { color: #64748b; font-size: 13px; }
+a { color: #2563eb; text-decoration: none; }
+.actions { margin-top: 20px; }
+.actions a {
+    display: inline-block;
+    background: #14243c;
+    color: white;
+    padding: 11px 17px;
+    border-radius: 7px;
+    margin-right: 8px;
+}
+</style>
+</head>
+<body>
+
+<header>
+    <h1>IndustryQ</h1>
+    <p>Enterprise Asset Management</p>
+</header>
+
+<main>
+    <h2>Asset Overview</h2>
+
+    <div class="cards">
+        <div class="card">
+            <h3>Total Assets</h3>
+            <div class="value">{{ stats.total_assets }}</div>
+        </div>
+        <div class="card">
+            <h3>Total Purchase Value</h3>
+            <div class="value">₹{{ stats.total_value|floatformat:2 }}</div>
+        </div>
+        <div class="card">
+            <h3>Available</h3>
+            <div class="value">{{ stats.available }}</div>
+        </div>
+        <div class="card">
+            <h3>Assigned</h3>
+            <div class="value">{{ stats.assigned }}</div>
+        </div>
+        <div class="card">
+            <h3>Under Maintenance</h3>
+            <div class="value">{{ stats.maintenance }}</div>
+        </div>
+        <div class="card">
+            <h3>Disposed</h3>
+            <div class="value">{{ stats.disposed }}</div>
+        </div>
+    </div>
+
+    <div class="actions">
+        <a href="/admin/assets/asset/">Manage Assets</a>
+        <a href="/admin/assets/maintenancerecord/">Maintenance Records</a>
+    </div>
+
+    <section>
+        <h2>Recent Assets</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Asset Code</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Department</th>
+                    <th>Status</th>
+                    <th>Purchase Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asset in recent_assets %}
+                <tr>
+                    <td>{{ asset.asset_code }}</td>
+                    <td>{{ asset.name }}</td>
+                    <td>{{ asset.get_category_display }}</td>
+                    <td>{{ asset.department|default:"—" }}</td>
+                    <td>{{ asset.get_status_display }}</td>
+                    <td>₹{{ asset.purchase_cost|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">No assets registered yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+</main>
+</body>
+</html>

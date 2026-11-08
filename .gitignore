@@ -11,3 +11,10 @@ media/
 .pytest_cache/
 .idea/
 .vscode/
+
+backups/
+
+*.backup
+*.backup-*
+db-backup-*.sqlite3
+installed-packages.txt

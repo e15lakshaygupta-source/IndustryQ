@@ -1048,11 +1048,18 @@ def purchase_bill_source_pdf(request, pk):
 
 
 @login_required
-def invoice_create(request):
+def invoice_create(request, pk=None):
     profile, companies, factories, departments, units = scope(request.user)
     if not billing_manager(request.user, profile):
         raise Http404
-    form = SalesInvoiceForm(request.POST or None, factories=factories)
+    invoice = None
+    if pk is not None:
+        invoice = _invoice_for_user(request, pk, factories, profile)
+        if invoice.status != BillingDocument.Status.DRAFT:
+            messages.error(request, "Only draft invoices can be edited.")
+            return redirect("billing:document_detail", pk=invoice.pk)
+    form_factories = factories.filter(pk=invoice.factory_id) if invoice else factories
+    form = SalesInvoiceForm(request.POST or None, factories=form_factories, instance=invoice)
     line_forms = []
     if request.method == "POST" and form.is_valid():
         try:
@@ -1077,31 +1084,40 @@ def invoice_create(request):
                     form.add_error(None, "Check the invoice line details.")
 
         if payload and len(validated_lines) == len(payload) and form.is_valid():
-            invoice = form.save(commit=False)
-            invoice.kind = BillingDocument.Kind.SALES_INVOICE
+            edited_invoice = form.save(commit=False)
+            edited_invoice.kind = BillingDocument.Kind.SALES_INVOICE
             try:
                 gst = calculate_gst_lines(
                     validated_lines,
                     form.cleaned_data["discount_amount"],
-                    invoice.issue_date,
-                    invoice,
+                    edited_invoice.issue_date,
+                    edited_invoice,
                 )
             except ValidationError as error:
                 form.add_error(None, error)
             else:
                 with transaction.atomic():
-                    factory = factories.select_for_update().get(pk=invoice.factory_id)
-                    invoice.factory = factory
-                    invoice.status = BillingDocument.Status.DRAFT
-                    invoice.created_by = request.user
-                    invoice.number = BillingDocument.next_number(factory, invoice.kind, invoice.issue_date)
+                    factory = factories.select_for_update().get(pk=edited_invoice.factory_id)
+                    if invoice:
+                        locked_invoice = BillingDocument.objects.select_for_update().get(pk=invoice.pk)
+                        if locked_invoice.status != BillingDocument.Status.DRAFT:
+                            form.add_error(None, "This invoice is no longer a draft and cannot be edited.")
+                            messages.error(request, "This invoice is no longer a draft and cannot be edited.")
+                            return redirect("billing:document_detail", pk=invoice.pk)
+                    edited_invoice.factory = factory
+                    edited_invoice.status = BillingDocument.Status.DRAFT
+                    if not invoice:
+                        edited_invoice.created_by = request.user
+                        edited_invoice.number = BillingDocument.next_number(factory, edited_invoice.kind, edited_invoice.issue_date)
                     for field, value in gst.items():
                         if field not in {"lines", "taxable_value"}:
-                            setattr(invoice, field, value)
-                    invoice.save()
+                            setattr(edited_invoice, field, value)
+                    edited_invoice.save()
+                    if invoice:
+                        edited_invoice.lines.all().delete()
                     for line in gst["lines"]:
                         BillingLine.objects.create(
-                            document=invoice,
+                            document=edited_invoice,
                             description=line["description"],
                             product=line["product"],
                             quantity=line["quantity"],
@@ -1115,9 +1131,9 @@ def invoice_create(request):
                             sgst_amount=line["sgst_amount"],
                             igst_amount=line["igst_amount"],
                         )
-                    log(request, "sales_invoice_created", invoice)
-                messages.success(request, f"Draft invoice {invoice.number} saved.")
-                return redirect("billing:document_detail", pk=invoice.pk)
+                    log(request, "sales_invoice_updated" if invoice else "sales_invoice_created", edited_invoice)
+                messages.success(request, f"Draft invoice {edited_invoice.number} saved.")
+                return redirect("billing:document_detail", pk=edited_invoice.pk)
 
     products = Product.objects.filter(is_active=True).select_related("gst_tax_profile")
     issue_date = (
@@ -1156,7 +1172,11 @@ def invoice_create(request):
             "product_options": product_options,
             "customer_states": customer_states,
             "factory_states": factory_states,
-            "title": "Create sales invoice",
+            "existing_lines": [
+                {"description": line.description, "product": line.product_id or "", "quantity": str(line.quantity), "unit_price": str(line.unit_price), "hsn_sac_code": line.hsn_sac_code, "tax_rate": str(line.tax_rate)}
+                for line in invoice.lines.all()
+            ] if invoice else [],
+            "title": "Edit sales invoice" if invoice else "Create sales invoice",
         },
     )
 

@@ -318,8 +318,7 @@ class Supplier(models.Model):
 
     @property
     def evaluation_score(self):
-        scores = self.evaluations.values_list("overall_score", flat=True)
-        scores = list(scores)
+        scores = [evaluation.overall_score for evaluation in self.evaluations.all()]
         return sum(scores, Decimal("0")) / len(scores) if scores else None
 
 

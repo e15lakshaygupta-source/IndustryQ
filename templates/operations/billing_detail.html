@@ -57,6 +57,7 @@
     </p>
     {% if doc.cancellation_reason %}<p><strong>Cancellation reason:</strong> {{ doc.cancellation_reason }}<br>Cancelled by {{ doc.canceled_by|default:"Deleted user" }} at {{ doc.canceled_at }}.</p>{% endif %}
     {% if can_manage and doc.status == 'draft' %}
+      <a class="ops-btn" href="{% url 'billing:document_edit' doc.pk %}">Edit draft</a>
       <form method="post" action="{% url 'billing:invoice_approve' doc.pk %}">{% csrf_token %}<button class="ops-btn" type="submit">Approve invoice</button></form>
     {% endif %}
     {% if can_manage and doc.status == 'approved' %}

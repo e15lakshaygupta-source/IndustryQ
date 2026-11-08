@@ -133,11 +133,12 @@ def _billing_dashboard_context(request, profile, factories):
     customer_sales = defaultdict(Decimal)
     receivable_by_customer = defaultdict(Decimal)
     for invoice in sales_docs:
-        customer_sales[invoice.customer.name] += _billing_net(
+        customer_name = invoice.customer.name if invoice.customer_id else "Unassigned customer"
+        customer_sales[customer_name] += _billing_net(
             invoice.total, adjustment_by_invoice[invoice.pk]
         )
         if invoice.status in (BillingDocument.Status.ISSUED, BillingDocument.Status.PART_PAID):
-            receivable_by_customer[invoice.customer.name] += max(
+            receivable_by_customer[customer_name] += max(
                 invoice.total - invoice.amount_paid - adjustment_by_invoice[invoice.pk],
                 Decimal("0.00"),
             )
@@ -328,7 +329,7 @@ def executive_dashboard(request):
         "present_today": present_today, "absent_today": absent_today, "pending_leaves": pending_leaves,
         "attendance_rate": round(present_today * 100 / (present_today + absent_today), 1) if present_today + absent_today else None,
         "factory_rows": factory_rows, "attendance_chart_json": json.dumps(attendance_chart),
-        "production_chart_json": json.dumps(production_chart),
+        "production_chart": production_chart,
         "alerts": alerts, "recent_activities": recent_activities,
         "operations_configured": True,
         "production_actual_today": actual_today,

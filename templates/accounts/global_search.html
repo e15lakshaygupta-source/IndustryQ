@@ -1,0 +1,16 @@
+{% load static %}
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Search | INDUSTRIQ</title><link rel="stylesheet" href="{% static 'css/style.css' %}"></head><body>
+{% include "partials/app_sidebar.html" %}<main class="app-content"><div class="page-shell">
+  <section class="page-header"><div><p class="eyebrow">Workspace</p><h1>Search</h1><p>Search records available to your account.</p></div></section>
+  <form method="get" action="{% url 'global_search' %}" class="search-form">
+    <label for="global-query">Search employees, machines, inventory, or invoices</label>
+    <div><input id="global-query" type="search" name="q" value="{{ query }}" maxlength="100" required><button type="submit">Search</button></div>
+  </form>
+  {% if query %}
+    <section class="card"><h2>Results for &ldquo;{{ query }}&rdquo;</h2>
+      {% if results %}<div class="table-responsive"><table><thead><tr><th>Type</th><th>Record</th><th>Details</th><th></th></tr></thead><tbody>
+      {% for result in results %}<tr><td>{{ result.kind }}</td><td>{{ result.title }}</td><td>{{ result.detail }}</td><td><a href="{{ result.url }}">Open</a></td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<p>No matching records were found.</p>{% endif %}
+    </section>
+  {% endif %}
+</div></main></body></html>

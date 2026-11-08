@@ -1,8 +1,8 @@
 {% extends "operations/base.html" %}
 {% block content %}
 <section class="ops-panel">
-  <div class="ops-panel-head">
-    <div><h1>Create sales invoice</h1><p>Save a draft, review its totals, then approve and issue it.</p></div>
+    <div class="ops-panel-head">
+    <div><h1>{{ title }}</h1><p>Save a draft, review its totals, then approve and issue it.</p></div>
     <div class="billing-actions">
       <a class="ops-btn secondary" href="{% url 'billing:customer_create' %}">+ Add customer</a>
       <a class="ops-btn" href="{% url 'billing:home' %}">Back to billing</a>
@@ -49,7 +49,7 @@
       </div>
     </section>
     <input type="hidden" name="lines" id="invoice-lines-json" value="">
-    <div class="ops-form-actions"><button class="ops-btn" type="submit">Save draft</button><a href="{% url 'billing:home' %}">Cancel and return</a></div>
+    <div class="ops-form-actions"><button class="ops-btn" type="submit">Save draft</button><a href="{% if form.instance.pk %}{% url 'billing:document_detail' form.instance.pk %}{% else %}{% url 'billing:home' %}{% endif %}">Cancel and return</a></div>
   </form>
 </section>
 <div hidden>
@@ -59,6 +59,7 @@
   {% for factory in factory_states %}<span data-factory-state data-id="{{ factory.id }}" data-state="{{ factory.state_code }}"></span>{% endfor %}
   {% for customer in customer_states %}<span data-customer-state data-id="{{ customer.id }}" data-state="{{ customer.state_code }}"></span>{% endfor %}
 </div>
+{{ existing_lines|json_script:"initial-invoice-lines" }}
 <style>
   .invoice-data-warning{display:grid;gap:5px;margin:12px 0 18px;padding:13px 15px;border:1px solid color-mix(in srgb,var(--warning) 35%,var(--line));border-left:4px solid var(--warning);border-radius:9px;background:color-mix(in srgb,var(--warning) 7%,var(--surface))}
   .invoice-data-warning strong{color:var(--text);font-size:12px}
@@ -178,7 +179,8 @@
       tax_rate: row.querySelector("[data-rate]").value
     })));
   });
-  addLine();
+  const initialLines = JSON.parse(document.getElementById("initial-invoice-lines").textContent || "[]");
+  if (initialLines.length) initialLines.forEach(addLine); else addLine();
   updateTotals();
 })();
 </script>

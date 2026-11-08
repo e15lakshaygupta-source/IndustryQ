@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.core.paginator import Paginator
+from django.urls import reverse
 from django.db import transaction
 from django.db.models import Q, Sum, Case, When, F, DecimalField
 
@@ -24,9 +25,10 @@ from apps.workforce.models import (
 )
 from apps.operations.models import BillingDocument, InventoryItem, ProductionEntry, ProductionPlan, StockMovement, WorkOrder
 from apps.operations.views import billing_manager
-from apps.intelligence.models import Machine
 from apps.enterprise.models import IndustrialProject
 from apps.enterprise.models import ComplianceItem
+from apps.core.views import _billing_dashboard_context
+from apps.intelligence.models import Machine
 
 
 def login_view(request):
@@ -63,7 +65,143 @@ def login_view(request):
 
 @login_required
 def dashboard_view(request):
-    return redirect("core:executive_dashboard")
+    profile, _ = UserProfile.objects.get_or_create(
+        user=request.user,
+        defaults={"role": UserProfile.Role.SUPER_ADMIN if request.user.is_superuser else UserProfile.Role.EMPLOYEE},
+    )
+    today = timezone.localdate()
+    companies = Company.objects.all()
+    factories = Factory.objects.select_related("company")
+    departments = Department.objects.all()
+    units = ProductionUnit.objects.all()
+    employees = Employee.objects.select_related("factory", "department")
+    shifts = Shift.objects.filter(is_active=True)
+    attendance = Attendance.objects.all()
+    leaves = LeaveRequest.objects.all()
+
+    if profile.role == UserProfile.Role.COMPANY_ADMIN:
+        companies = companies.filter(pk=profile.company_id) if profile.company_id else companies.none()
+        factories = factories.filter(company__in=companies)
+        departments = departments.filter(factory__in=factories)
+        units = units.filter(department__factory__in=factories)
+        employees = employees.filter(factory__in=factories)
+        shifts = shifts.filter(factory__in=factories)
+        attendance = attendance.filter(employee__factory__in=factories)
+        leaves = leaves.filter(employee__factory__in=factories)
+    elif profile.role in (UserProfile.Role.FACTORY_MANAGER, UserProfile.Role.DEPARTMENT_MANAGER, UserProfile.Role.EMPLOYEE):
+        factories = factories.filter(pk=profile.factory_id)
+        departments = departments.filter(factory_id=profile.factory_id)
+        units = units.filter(department__factory_id=profile.factory_id)
+        employees = employees.filter(factory_id=profile.factory_id)
+        shifts = shifts.filter(factory_id=profile.factory_id)
+        attendance = attendance.filter(employee__factory_id=profile.factory_id)
+        leaves = leaves.filter(employee__factory_id=profile.factory_id)
+
+    production_entries = ProductionEntry.objects.filter(factory__in=factories)
+    production_plans = ProductionPlan.objects.filter(factory__in=factories)
+    work_orders = WorkOrder.objects.filter(factory__in=factories)
+    if profile.role == UserProfile.Role.DEPARTMENT_MANAGER:
+        production_entries = production_entries.filter(department_id=profile.department_id)
+        production_plans = production_plans.filter(department_id=profile.department_id)
+        work_orders = work_orders.filter(department_id=profile.department_id)
+
+    production_today = production_entries.filter(production_date=today)
+    inventory_items = InventoryItem.objects.filter(factory__in=factories, is_active=True)
+    inventory_value, inventory_low_stock = Decimal("0"), 0
+    for item in inventory_items:
+        stock = StockMovement.objects.filter(item=item).aggregate(total=Sum(Case(
+            When(kind__in=[StockMovement.Kind.RECEIPT, StockMovement.Kind.ADJUST_IN], then=F("quantity")),
+            default=F("quantity") * -1,
+            output_field=DecimalField(max_digits=16, decimal_places=3),
+        )))['total'] or 0
+        inventory_value += stock * item.standard_cost
+        if item.minimum_stock > 0 and stock <= item.minimum_stock:
+            inventory_low_stock += 1
+
+    sales_invoices = BillingDocument.objects.filter(factory__in=factories)
+    billing_access = billing_manager(request.user, profile)
+    outstanding_invoices = sales_invoices.filter(status__in=[BillingDocument.Status.ISSUED, BillingDocument.Status.PART_PAID])
+    billing_totals = outstanding_invoices.aggregate(total=Sum("total"), paid=Sum("amount_paid"))
+    machines = Machine.objects.filter(factory__in=factories)
+    projects = IndustrialProject.objects.filter(factory__in=factories)
+    context = {
+        "profile": profile,
+        "today": today,
+        "asset_count": machines.count(),
+        "ongoing_operations": work_orders.exclude(status__in=[WorkOrder.Status.COMPLETED, WorkOrder.Status.CANCELLED]).count(),
+        "project_count": projects.exclude(status=IndustrialProject.Status.COMPLETE).count(),
+        "production_actual_today": production_today.aggregate(total=Sum("actual_quantity"))["total"] or 0,
+        "production_rejected_today": production_today.aggregate(total=Sum("rejected_quantity"))["total"] or 0,
+        "production_planned_today": work_orders.filter(scheduled_start__date=today).aggregate(total=Sum("planned_quantity"))["total"] or 0,
+        "open_work_orders": work_orders.exclude(status__in=[WorkOrder.Status.COMPLETED, WorkOrder.Status.CANCELLED]).count(),
+        "active_production_plans": production_plans.exclude(status__in=[ProductionPlan.Status.COMPLETED, ProductionPlan.Status.CANCELLED]).count(),
+        "inventory_item_count": inventory_items.count(),
+        "inventory_low_stock": inventory_low_stock,
+        "inventory_value": inventory_value,
+        "billing_access": billing_access,
+        "billing_draft_count": sales_invoices.filter(status=BillingDocument.Status.DRAFT).count(),
+        "billing_open_count": outstanding_invoices.count(),
+        "billing_overdue_count": outstanding_invoices.filter(due_date__lt=today).count(),
+        "billing_balance_due": (billing_totals["total"] or Decimal("0.00")) - (billing_totals["paid"] or Decimal("0.00")),
+        "total_companies": companies.count(),
+        "total_factories": factories.count(),
+        "total_departments": departments.count(),
+        "total_units": units.count(),
+        "total_employees": employees.count(),
+        "active_employees": employees.filter(employment_status=Employee.EmploymentStatus.ACTIVE).count(),
+        "total_shifts": shifts.count(),
+        "present_today": attendance.filter(date=today, status__in=[Attendance.Status.PRESENT, Attendance.Status.LATE, Attendance.Status.HALF_DAY]).count(),
+        "absent_today": attendance.filter(date=today, status=Attendance.Status.ABSENT).count(),
+        "pending_leaves": leaves.filter(status=LeaveRequest.ApprovalStatus.PENDING).count(),
+        "companies": companies.order_by("name")[:5],
+        "factories": factories.order_by("name")[:10],
+        "recent_employees": employees.order_by("-created_at")[:8],
+        "recent_activities": UserActivity.objects.select_related("user").order_by("-created_at")[:8],
+    }
+    context.update(_billing_dashboard_context(request, profile, factories))
+    return render(request, "accounts/dashboard.html", context)
+
+
+@login_required
+def global_search_view(request):
+    """Search operational records while applying the same organization scope as dashboards."""
+    query = request.GET.get("q", "").strip()[:100]
+    profile, _ = UserProfile.objects.get_or_create(
+        user=request.user,
+        defaults={"role": UserProfile.Role.SUPER_ADMIN if request.user.is_superuser else UserProfile.Role.EMPLOYEE},
+    )
+    factories = Factory.objects.all()
+    if profile.role == UserProfile.Role.COMPANY_ADMIN:
+        factories = factories.filter(company_id=profile.company_id) if profile.company_id else factories.none()
+    elif profile.role in (UserProfile.Role.FACTORY_MANAGER, UserProfile.Role.DEPARTMENT_MANAGER, UserProfile.Role.EMPLOYEE):
+        factories = factories.filter(pk=profile.factory_id) if profile.factory_id else factories.none()
+
+    employees = Employee.objects.filter(factory__in=factories).select_related("factory", "department")
+    machines = Machine.objects.filter(factory__in=factories).select_related("factory", "department")
+    inventory = InventoryItem.objects.filter(factory__in=factories, is_active=True).select_related("factory")
+    invoices = BillingDocument.objects.filter(factory__in=factories).select_related("factory", "customer")
+    if profile.role == UserProfile.Role.DEPARTMENT_MANAGER:
+        employees = employees.filter(department_id=profile.department_id)
+        machines = machines.filter(department_id=profile.department_id)
+    if profile.role == UserProfile.Role.EMPLOYEE:
+        employees = employees.filter(user=request.user)
+        invoices = invoices.none()
+
+    results = []
+    if query:
+        for employee in employees.filter(
+            Q(employee_id__icontains=query) | Q(first_name__icontains=query)
+            | Q(last_name__icontains=query) | Q(email__icontains=query)
+        )[:20]:
+            results.append({"kind": "Employee", "title": f"{employee.first_name} {employee.last_name}".strip(), "detail": f"{employee.employee_id} · {employee.factory.name}", "url": reverse("workforce:employee_detail", args=[employee.pk])})
+        for machine in machines.filter(Q(asset_tag__icontains=query) | Q(name__icontains=query) | Q(serial_number__icontains=query))[:20]:
+            results.append({"kind": "Machine", "title": machine.name, "detail": f"{machine.asset_tag} · {machine.factory.name}", "url": reverse("intelligence:machines")})
+        for item in inventory.filter(Q(sku__icontains=query) | Q(tracking_code__icontains=query) | Q(name__icontains=query))[:20]:
+            results.append({"kind": "Inventory", "title": item.name, "detail": f"{item.sku} · {item.factory.name}", "url": reverse("operations:inventory")})
+        if profile.role != UserProfile.Role.EMPLOYEE and billing_manager(request.user, profile):
+            for invoice in invoices.filter(Q(number__icontains=query) | Q(supplier_invoice_number__icontains=query) | Q(customer__name__icontains=query))[:20]:
+                results.append({"kind": "Invoice", "title": invoice.number or invoice.supplier_invoice_number, "detail": f"{invoice.get_status_display()} · {invoice.factory.name}", "url": reverse("billing:document_detail", args=[invoice.pk])})
+    return render(request, "accounts/global_search.html", {"query": query, "results": results})
 
 
 @login_required
