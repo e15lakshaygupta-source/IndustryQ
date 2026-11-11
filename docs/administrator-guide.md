@@ -26,6 +26,18 @@ Organization management is role-scoped. Company Admins manage their assigned com
 
 Application roles and Django site-superuser accounts are different. Create Django `is_superuser` accounts only for platform operators using the deployment's controlled Django admin procedure. A client Company Admin should not receive platform-wide Django admin access.
 
+### One-time recovery on a Render Free web service
+
+Render Free has no Shell, so the Procfile runs `recover_admin_once` before Gunicorn starts. If the Render service has a custom Start Command in its Settings, update it to match the `web` command in `Procfile`; Render runs the Start Command configured in the service. The command does nothing unless all three temporary variables are set in the Render service environment:
+
+- `INDUSTRIQ_ADMIN_RECOVERY_USERNAME`
+- `INDUSTRIQ_ADMIN_RECOVERY_EMAIL`
+- `INDUSTRIQ_ADMIN_RECOVERY_PASSWORD`
+
+Use a new, unique username if you cannot recall the existing one. The command resets the password if that username is already a Django superuser; it refuses to promote an existing non-superuser. It validates the password, sets the app role to Super Admin, and records a permanent one-time audit marker. The marker makes later restarts ignore recovery variables.
+
+After a successful deploy, sign in at `/admin/` with the chosen username and password, then immediately remove all three recovery variables from Render and save the environment. Do not send these values in chat or commit them to source control. The procedure is for this one recovery only; do not leave credentials in the Render environment.
+
 ## Onboard managers and employees
 
 - Create manager and employee user accounts from **Create user**, or manage existing profiles in **Manage users & roles**.
